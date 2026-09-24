@@ -12,6 +12,7 @@ const requestSchema = new mongoose.Schema({
   requestId: { type: String, required: true, unique: true },
   contractorId: { type: String, default: '' },
   contractorName: { type: String, required: true },
+  contractorEmail: { type: String, default: '' },
   propertyId: { type: String, default: '' },
   propertyName: { type: String, required: true },
   propertyAddress: { type: String, default: '' },
@@ -19,7 +20,7 @@ const requestSchema = new mongoose.Schema({
   estimatedTotal: { type: Number, required: true, default: 0 },
   status: {
     type: String,
-    enum: ['Submitted', 'Approved', 'Ordered', 'Delivered', 'Cancelled'],
+    enum: ['Submitted', 'Approved', 'Ordered', 'Delivered', 'Rejected'],
     default: 'Submitted'
   },
   items: [requestItemSchema]

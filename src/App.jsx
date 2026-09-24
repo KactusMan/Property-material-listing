@@ -1,64 +1,93 @@
-import React, { useState } from 'react';
-import VendorForm from './components/VendorForm';
+import React, { useState, useEffect } from 'react';
+import AuthPage from './components/AuthPage';
+import Sidebar from './components/Sidebar';
+import TopBar from './components/TopBar';
+import ContractorDashboard from './components/ContractorDashboard';
 import AdminDashboard from './components/AdminDashboard';
-import SuccessModal from './components/SuccessModal';
-import { Home, ShieldCheck, Sparkles, Database } from 'lucide-react';
+import PropertyCatalog from './components/PropertyCatalog';
 
 export default function App() {
-  const [activeMode, setActiveMode] = useState('vendor'); // 'vendor' | 'admin'
-  const [submittedRequestId, setSubmittedRequestId] = useState(null);
+  const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'properties' | 'requests' | 'catalog'
+  const [globalSearch, setGlobalSearch] = useState('');
 
-  const handleRequestSuccess = (requestId) => {
-    setSubmittedRequestId(requestId);
+  // Check saved session on initial load
+  useEffect(() => {
+    const savedUser = localStorage.getItem('pm_user');
+    const token = localStorage.getItem('pm_token');
+    if (savedUser && token) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        localStorage.removeItem('pm_user');
+        localStorage.removeItem('pm_token');
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('pm_user');
+    localStorage.removeItem('pm_token');
+    setUser(null);
   };
 
+  // If not logged in, render Split-Screen Auth Page (Screenshot 2 Match)
+  if (!user) {
+    return <AuthPage onLoginSuccess={(loggedInUser) => setUser(loggedInUser)} />;
+  }
+
+  const isAdmin = user.role === 'admin';
+
   return (
-    <div className="app-container">
-      {/* App Header */}
-      <header className="app-header">
-        <div className="app-title-group">
-          <h1>
-            <span role="img" aria-label="house">🏠</span> Property Materials
-          </h1>
-          <p>
-            Real-Estate Vendor Order System &nbsp;|&nbsp;
-            <span style={{ color: 'var(--pink-primary)', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Database size={14} /> Connected to MongoDB Atlas
-            </span>
-          </p>
-        </div>
-
-        {/* Mode Switcher Tabs */}
-        <div className="mode-toggle">
-          <button
-            className={`mode-btn ${activeMode === 'vendor' ? 'active' : ''}`}
-            onClick={() => setActiveMode('vendor')}
-          >
-            🌸 Vendor Request
-          </button>
-          <button
-            className={`mode-btn ${activeMode === 'admin' ? 'active' : ''}`}
-            onClick={() => setActiveMode('admin')}
-          >
-            👑 Purchaser / Admin
-          </button>
-        </div>
-      </header>
-
-      {/* Main Mode Views */}
-      <main>
-        {activeMode === 'vendor' ? (
-          <VendorForm onSuccess={handleRequestSuccess} />
-        ) : (
-          <AdminDashboard />
-        )}
-      </main>
-
-      {/* Submission Success Pop-up Modal */}
-      <SuccessModal
-        requestId={submittedRequestId}
-        onClose={() => setSubmittedRequestId(null)}
+    <div className="dashboard-layout">
+      {/* Left Sidebar (Screenshot 1 Match) */}
+      <Sidebar
+        user={user}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onLogout={handleLogout}
       />
+
+      {/* Main Wrapper */}
+      <div className="main-wrapper">
+        {/* Top Navigation Header (Screenshot 1 Match) */}
+        <TopBar
+          user={user}
+          searchTerm={globalSearch}
+          setSearchTerm={setGlobalSearch}
+        />
+
+        {/* Dynamic Content Area */}
+        <main className="content-area">
+          {activeTab === 'home' && (
+            isAdmin ? (
+              <AdminDashboard user={user} />
+            ) : (
+              <ContractorDashboard user={user} />
+            )
+          )}
+
+          {activeTab === 'properties' && (
+            <PropertyCatalog onSelectPropertyForOrder={() => setActiveTab('home')} />
+          )}
+
+          {activeTab === 'requests' && (
+            isAdmin ? (
+              <AdminDashboard user={user} />
+            ) : (
+              <ContractorDashboard user={user} />
+            )
+          )}
+
+          {activeTab === 'catalog' && (
+            <ContractorDashboard user={user} />
+          )}
+
+          {activeTab === 'contractors' && (
+            <AdminDashboard user={user} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
