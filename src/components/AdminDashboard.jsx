@@ -617,9 +617,29 @@ export default function AdminDashboard({ user, activeTab }) {
                   </button>
                   <button
                     onClick={() => handleToggleProduct(p.productId)}
-                    style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: p.active ? '#fee2e2' : '#dcfce7', color: p.active ? '#dc2626' : '#15803d', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      border: p.active ? '1px solid #bbf7d0' : '1px solid #fecaca',
+                      background: p.active ? '#dcfce7' : '#fee2e2',
+                      color: p.active ? '#15803d' : '#dc2626',
+                      fontWeight: '800',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    title={p.active ? 'Click to Deactivate Product' : 'Click to Activate Product'}
                   >
-                    {p.active ? 'Deactivate' : 'Activate'}
+                    <span style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: p.active ? '#16a34a' : '#dc2626'
+                    }} />
+                    {p.active ? 'Active' : 'Inactive'}
                   </button>
                 </div>
               </div>
