@@ -136,6 +136,17 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+app.get('/api/auth/me', authMiddleware, async (req, res) => {
+  res.json({
+    id: req.user._id,
+    name: req.user.name,
+    email: req.user.email,
+    role: req.user.role,
+    companyName: req.user.companyName,
+    contractorId: req.user.contractorId
+  });
+});
+
 /* CORE DATA ENDPOINTS */
 app.get('/api/products', authMiddleware, async (req, res) => {
   try {

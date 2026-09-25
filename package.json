@@ -8,6 +8,7 @@
     "client": "vite",
     "server": "node server/index.js",
     "import-data": "node server/importWorkbook.js",
+    "provision-accounts": "node server/provisionAccounts.js",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"

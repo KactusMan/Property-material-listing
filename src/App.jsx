@@ -5,23 +5,29 @@ import TopBar from './components/TopBar';
 import ContractorDashboard from './components/ContractorDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import PropertyCatalog from './components/PropertyCatalog';
+import { apiFetch } from './lib/api';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('home'); // 'home' | 'properties' | 'requests' | 'catalog'
   const [globalSearch, setGlobalSearch] = useState('');
 
-  // Check saved session on initial load
+  // Restore only a still-valid session, so changing accounts works from one browser.
   useEffect(() => {
     const savedUser = localStorage.getItem('pm_user');
     const token = localStorage.getItem('pm_token');
     if (savedUser && token) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem('pm_user');
-        localStorage.removeItem('pm_token');
-      }
+      apiFetch('/api/auth/me')
+        .then(async (response) => {
+          if (!response.ok) throw new Error('Session expired');
+          const currentUser = await response.json();
+          localStorage.setItem('pm_user', JSON.stringify(currentUser));
+          setUser(currentUser);
+        })
+        .catch(() => {
+          localStorage.removeItem('pm_user');
+          localStorage.removeItem('pm_token');
+        });
     }
   }, []);
 
