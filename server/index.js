@@ -16,8 +16,18 @@ const JWT_SECRET = process.env.JWT_SECRET || 'propertymaterials_secret_key_2026'
 app.use(cors());
 app.use(express.json());
 
-// Connect once on startup. Data imports are an explicit deployment action.
-connectDB();
+// The API starts only after MongoDB is available
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error(`Server startup blocked: ${error.message}`);
+    process.exit(1);
+  }
+};
 
 /* Helper to generate JWT Token */
 const generateToken = (user) => {
@@ -57,10 +67,10 @@ const adminOnly = (req, res, next) => {
 };
 
 /* =========================================================
-   AUTHENTICATION API ENDPOINTS (with bcrypt hashing)
+   AUTHENTICATION API ENDPOINTS
    ========================================================= */
 
-// 1. Register User (Contractor)
+// Register User (Contractor)
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password, companyName } = req.body;
@@ -80,7 +90,7 @@ app.post('/api/auth/register', async (req, res) => {
     const newUser = await User.create({
       name,
       email: email.toLowerCase(),
-      password, // Password hashed automatically via pre-save hook in User model
+      password,
       role: 'contractor',
       companyName: companyName || name,
       contractorId: ''
@@ -107,7 +117,7 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// 2. Login User (with bcrypt match Password)
+// Login User
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -137,7 +147,8 @@ app.post('/api/auth/login', async (req, res) => {
         email: user.email,
         role: user.role,
         companyName: user.companyName,
-        contractorId: user.contractorId
+        contractorId: user.contractorId,
+        assignedProperties: user.assignedProperties || []
       }
     });
 
@@ -147,7 +158,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// 3. Get Current Profile
+// Get Current Profile
 app.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -164,16 +175,16 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
    CORE PROPERTY & MATERIAL ENDPOINTS
    ========================================================= */
 
-// Get Active Products (Prices hidden for Vendor security, unless Admin)
+// Get Products
 app.get('/api/products', authMiddleware, async (req, res) => {
   try {
-    const products = await Product.find({ active: true }).lean();
-    
-    // Security: hide expectedPrice if not admin
     const isAdmin = req.user.role === 'admin';
+    const filter = isAdmin ? {} : { active: true };
+    const products = await Product.find(filter).sort({ category: 1, name: 1 }).lean();
 
     const safeProducts = products.map(p => ({
       id: p.productId,
+      productId: p.productId,
       name: p.name,
       category: p.category,
       unit: p.unit,
@@ -181,7 +192,8 @@ app.get('/api/products', authMiddleware, async (req, res) => {
       supplierLink: p.supplierLink,
       image: p.image,
       notes: p.notes,
-      ...(isAdmin ? { expectedPrice: p.expectedPrice } : {})
+      active: p.active,
+      expectedPrice: p.expectedPrice
     }));
 
     res.json(safeProducts);
@@ -190,28 +202,147 @@ app.get('/api/products', authMiddleware, async (req, res) => {
   }
 });
 
-// Get Active Properties
+// Admin: Create Product
+app.post('/api/products', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { name, category, unit, details, supplierLink, expectedPrice, image, notes } = req.body;
+    if (!name || !category) {
+      return res.status(400).json({ error: 'Name and category are required.' });
+    }
+
+    const count = await Product.countDocuments();
+    const productId = `P${String(count + 1).padStart(3, '0')}`;
+
+    const newProd = await Product.create({
+      productId,
+      name,
+      category,
+      unit: unit || 'each',
+      details: details || '',
+      supplierLink: supplierLink || '',
+      expectedPrice: Number(expectedPrice || 0),
+      image: image || '',
+      notes: notes || '',
+      active: true
+    });
+
+    res.status(201).json(newProd);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create product: ' + error.message });
+  }
+});
+
+// Admin: Edit Product
+app.put('/api/products/:id', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, category, unit, details, supplierLink, expectedPrice, image, notes, active } = req.body;
+
+    const updated = await Product.findOneAndUpdate(
+      { productId: id },
+      { $set: { name, category, unit, details, supplierLink, expectedPrice: Number(expectedPrice || 0), image, notes, active } },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).json({ error: 'Product not found.' });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update product: ' + error.message });
+  }
+});
+
+// Admin: Toggle Product Active State
+app.patch('/api/products/:id/toggle', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const prod = await Product.findOne({ productId: id });
+    if (!prod) return res.status(404).json({ error: 'Product not found.' });
+
+    prod.active = !prod.active;
+    await prod.save();
+    res.json(prod);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to toggle product status: ' + error.message });
+  }
+});
+
+// Get Properties
 app.get('/api/properties', authMiddleware, async (req, res) => {
   try {
-    const properties = await Property.find({ active: true }).lean();
+    const isAdmin = req.user.role === 'admin';
+    const filter = isAdmin ? {} : { active: true };
+    const properties = await Property.find(filter).sort({ name: 1 }).lean();
+
     const safeProperties = properties.map(p => ({
       id: p.propertyId,
+      propertyId: p.propertyId,
       name: p.name,
-      address: p.address
+      address: p.address,
+      active: p.active
     }));
+
     res.json(safeProperties);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch properties: ' + error.message });
   }
 });
 
+// Admin: Create Property
+app.post('/api/properties', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { name, address } = req.body;
+    if (!name || !address) {
+      return res.status(400).json({ error: 'Property name and address are required.' });
+    }
+
+    const count = await Property.countDocuments();
+    const propertyId = `PR${String(count + 1).padStart(3, '0')}`;
+
+    const newProp = await Property.create({
+      propertyId,
+      name,
+      address,
+      active: true
+    });
+
+    res.status(201).json(newProp);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create property: ' + error.message });
+  }
+});
+
+// Admin: Edit Property
+app.put('/api/properties/:id', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, address, active } = req.body;
+
+    const updated = await Property.findOneAndUpdate(
+      { propertyId: id },
+      { $set: { name, address, active } },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).json({ error: 'Property not found.' });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update property: ' + error.message });
+  }
+});
+
 // Get Active Contractors
 app.get('/api/contractors', authMiddleware, adminOnly, async (req, res) => {
   try {
-    const contractors = await Contractor.find({ active: true }).lean();
+    const contractors = await Contractor.find({}).sort({ name: 1 }).lean();
     const safeContractors = contractors.map(c => ({
       id: c.contractorId,
-      name: c.name
+      contractorId: c.contractorId,
+      name: c.name,
+      email: c.email || '',
+      phone: c.phone || '',
+      companyName: c.companyName || '',
+      assignedProperties: c.assignedProperties || [],
+      active: c.active
     }));
     res.json(safeContractors);
   } catch (error) {
@@ -219,18 +350,58 @@ app.get('/api/contractors', authMiddleware, adminOnly, async (req, res) => {
   }
 });
 
-// Get Requests (Filtered by role: Contractor sees their own; Admin sees all)
+// Admin: Update Contractor Assigned Properties
+app.put('/api/contractors/:id/properties', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assignedProperties } = req.body;
+
+    const updated = await Contractor.findOneAndUpdate(
+      { contractorId: id },
+      { $set: { assignedProperties } },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).json({ error: 'Contractor not found.' });
+
+    if (updated.email) {
+      await User.updateOne({ email: updated.email.toLowerCase() }, { $set: { assignedProperties } });
+    }
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update assigned properties: ' + error.message });
+  }
+});
+
+// Get Requests
 app.get('/api/requests', authMiddleware, async (req, res) => {
   try {
     let filter = {};
     if (req.user.role === 'contractor') {
-      filter = {
-        contractorEmail: req.user.email
-      };
+      filter = { contractorEmail: req.user.email };
     }
 
     const requests = await Request.find(filter).sort({ createdAt: -1 }).lean();
-    res.json(requests);
+
+    const allProducts = await Product.find({}).lean();
+    const prodMap = {};
+    allProducts.forEach(p => { prodMap[p.productId] = p; });
+
+    const enrichedRequests = requests.map(r => ({
+      ...r,
+      items: (r.items || []).map(item => {
+        const pDoc = prodMap[item.productId];
+        return {
+          ...item,
+          category: item.category || (pDoc ? pDoc.category : ''),
+          details: item.details || (pDoc ? pDoc.details : ''),
+          supplierLink: item.supplierLink || (pDoc ? pDoc.supplierLink : '')
+        };
+      })
+    }));
+
+    res.json(enrichedRequests);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch requests: ' + error.message });
   }
@@ -290,6 +461,9 @@ app.post('/api/requests', authMiddleware, async (req, res) => {
       savedItems.push({
         productId: dbProd.productId,
         productName: dbProd.name,
+        category: dbProd.category || '',
+        details: dbProd.details || '',
+        supplierLink: dbProd.supplierLink || '',
         quantity: qty,
         expectedPrice: price,
         estimatedTotal: lineTotal
@@ -355,6 +529,4 @@ app.patch('/api/requests/:requestId/status', authMiddleware, adminOnly, async (r
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+startServer();

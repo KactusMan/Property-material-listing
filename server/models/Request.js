@@ -3,6 +3,9 @@ import mongoose from 'mongoose';
 const requestItemSchema = new mongoose.Schema({
   productId: { type: String, required: true },
   productName: { type: String, required: true },
+  category: { type: String, default: '' },
+  details: { type: String, default: '' },
+  supplierLink: { type: String, default: '' },
   quantity: { type: Number, required: true },
   expectedPrice: { type: Number, required: true },
   estimatedTotal: { type: Number, required: true }

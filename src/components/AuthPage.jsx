@@ -29,10 +29,10 @@ export default function AuthPage({ onLoginSuccess }) {
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed.');
+        throw new Error(data.error || 'The server is unavailable. Start the API server and check its database configuration.');
       }
 
       localStorage.setItem('pm_token', data.token);

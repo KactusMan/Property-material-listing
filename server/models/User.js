@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['admin', 'contractor'], default: 'contractor' },
   contractorId: { type: String, default: '' },
   companyName: { type: String, default: '' },
+  assignedProperties: [{ type: String }],
   active: { type: Boolean, default: true }
 }, {
   timestamps: true

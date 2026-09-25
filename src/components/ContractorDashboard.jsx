@@ -10,13 +10,16 @@ import {
   CheckCircle, 
   Clock, 
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from 'lucide-react';
 import PropertyCatalog from './PropertyCatalog';
 import SuccessModal from './SuccessModal';
 import { apiFetch } from '../lib/api';
+import { useI18n } from '../lib/i18n';
 
 export default function ContractorDashboard({ user }) {
+  const { t } = useI18n();
   const [properties, setProperties] = useState([]);
   const [products, setProducts] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
@@ -76,21 +79,26 @@ export default function ContractorDashboard({ user }) {
     }));
   };
 
-  const categories = ['All', ...new Set(products.map(p => p.category))];
+  const categories = [t('allCategories'), ...new Set(products.map(p => p.category))];
 
   const filteredProducts = products.filter(p => {
-    const matchCat = selectedCategory === 'All' || p.category === selectedCategory;
+    const matchCat = selectedCategory === t('allCategories') || selectedCategory === 'All' || p.category === selectedCategory;
     const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         (p.details && p.details.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchCat && matchSearch;
   });
+
+  // Filter assigned properties if specified on user profile
+  const assignedProps = user?.assignedProperties && user.assignedProperties.length > 0
+    ? properties.filter(p => user.assignedProperties.includes(p.name))
+    : properties;
 
   const totalSelectedCount = Object.values(quantities).reduce((sum, q) => sum + q, 0);
 
   const handleSubmit = async () => {
     setError('');
     if (!selectedProperty) {
-      setError('Please select the property you are working on.');
+      setError(t('selectProperty'));
       return;
     }
 
@@ -121,7 +129,7 @@ export default function ContractorDashboard({ user }) {
       setQuantities({});
       setNotes('');
       setSubmittedRequestId(data.requestId);
-      fetchInitialData(); // Refresh list
+      fetchInitialData();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -142,7 +150,7 @@ export default function ContractorDashboard({ user }) {
 
   return (
     <div>
-      {/* Metrics Row matching Screenshot 1 */}
+      {/* Metrics Row */}
       <div className="metrics-grid">
         <div className="metric-card-pro">
           <div className="metric-header">
@@ -153,7 +161,7 @@ export default function ContractorDashboard({ user }) {
 
         <div className="metric-card-pro">
           <div className="metric-header">
-            <span className="metric-title">Approved by Admin</span>
+            <span className="metric-title">{t('approvedOrders')}</span>
           </div>
           <div className="metric-number" style={{ color: 'var(--primary-blue)' }}>
             {approvedRequests.length}
@@ -162,7 +170,7 @@ export default function ContractorDashboard({ user }) {
 
         <div className="metric-card-pro">
           <div className="metric-header">
-            <span className="metric-title">Pending Admin Review</span>
+            <span className="metric-title">{t('pendingReview')}</span>
           </div>
           <div className="metric-number" style={{ color: '#d97706' }}>
             {pendingRequests.length}
@@ -171,35 +179,35 @@ export default function ContractorDashboard({ user }) {
       </div>
 
       {/* Internal Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+      <div className="admin-nav-tabs">
         <button
           className={`role-tab-btn ${viewTab === 'request' ? 'active' : ''}`}
           onClick={() => setViewTab('request')}
         >
-          New material request
+          {t('newMaterialRequest')}
         </button>
 
         <button
           className={`role-tab-btn ${viewTab === 'my-requests' ? 'active' : ''}`}
           onClick={() => setViewTab('my-requests')}
         >
-          My requests ({myRequests.length})
+          {t('myRequests')} ({myRequests.length})
         </button>
 
         <button
           className={`role-tab-btn ${viewTab === 'properties' ? 'active' : ''}`}
           onClick={() => setViewTab('properties')}
         >
-          Properties
+          {t('properties')}
         </button>
       </div>
 
-      {/* Tab 1: New Order Form */}
+      {/* TAB 1: NEW ORDER FORM */}
       {viewTab === 'request' && (
         <div>
           {error && (
             <div style={{ background: '#fef2f2', color: '#dc2626', padding: '14px', borderRadius: '12px', marginBottom: '20px', fontWeight: '700' }}>
-              {error}
+              ⚠️ {error}
             </div>
           )}
 
@@ -207,7 +215,7 @@ export default function ContractorDashboard({ user }) {
           <div className="chart-card" style={{ marginBottom: '20px' }}>
             <h3 className="chart-title" style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Building size={20} color="var(--primary-blue)" />
-              Select Job Site Property
+              {t('selectProperty')}
             </h3>
 
             <select
@@ -215,10 +223,10 @@ export default function ContractorDashboard({ user }) {
               value={selectedProperty}
               onChange={(e) => setSelectedProperty(e.target.value)}
             >
-              <option value="">-- Choose Assigned Property --</option>
-              {properties.map(p => (
+              <option value="">{t('chooseAssignedProperty')}</option>
+              {(assignedProps.length > 0 ? assignedProps : properties).map(p => (
                 <option key={p.id} value={p.name}>
-                  {p.name} — {p.address}
+                  📍 {p.name} — {p.address}
                 </option>
               ))}
             </select>
@@ -228,7 +236,7 @@ export default function ContractorDashboard({ user }) {
           <div className="chart-card" style={{ marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
               <h3 className="chart-title" style={{ margin: 0 }}>
-                Approved Materials Catalog ({products.length} Items)
+                {t('approvedCatalog')} ({products.length} Items)
               </h3>
               
               <div style={{ position: 'relative', width: '260px' }}>
@@ -236,7 +244,7 @@ export default function ContractorDashboard({ user }) {
                 <input
                   type="text"
                   className="auth-input"
-                  placeholder="Search materials..."
+                  placeholder={t('searchMaterials')}
                   style={{ paddingLeft: '36px', padding: '8px 12px 8px 36px', fontSize: '0.85rem' }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -257,7 +265,7 @@ export default function ContractorDashboard({ user }) {
               ))}
             </div>
 
-            {/* Product Items */}
+            {/* Product Cards */}
             <div className="products-grid">
               {filteredProducts.map(prod => {
                 const qty = quantities[prod.id] || 0;
@@ -269,7 +277,7 @@ export default function ContractorDashboard({ user }) {
                         <span className="product-category-tag">{prod.category}</span>
                       </div>
                       {prod.details && <div className="product-details">{prod.details}</div>}
-                      <div className="product-unit">Unit: {prod.unit || 'each'}</div>
+                      <div className="product-unit">{t('unit')}: {prod.unit || 'each'}</div>
                     </div>
 
                     <div className="quantity-control">
@@ -301,14 +309,14 @@ export default function ContractorDashboard({ user }) {
           </div>
 
           {/* Notes & Submit */}
-          <div className="chart-card" style={{ marginBottom: '80px' }}>
+          <div className="chart-card" style={{ marginBottom: '90px' }}>
             <h3 className="chart-title" style={{ marginBottom: '12px' }}>
-              Additional Order Notes
+              {t('orderNotes')}
             </h3>
             <textarea
               className="auth-input"
               rows="3"
-              placeholder="Provide delivery instructions or room details..."
+              placeholder={t('notesPlaceholder')}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
@@ -319,7 +327,7 @@ export default function ContractorDashboard({ user }) {
             <div className="submit-inner">
               <div className="items-summary-count">
                 <Sparkles size={18} color="var(--primary-blue)" />
-                <span>Selected Items: <strong>{totalSelectedCount}</strong></span>
+                <span>{t('selectedItems')}: <strong>{totalSelectedCount}</strong></span>
               </div>
               <button
                 className="btn-auth-submit"
@@ -328,23 +336,23 @@ export default function ContractorDashboard({ user }) {
                 disabled={submitting || totalSelectedCount === 0}
               >
                 <Send size={18} />
-                {submitting ? 'Submitting…' : 'Submit material request'}
+                {submitting ? t('submitting') : t('submitRequest')}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Tab 2: My Requests Feed (reflects Admin Approval status) */}
+      {/* TAB 2: MY REQUESTS FEED */}
       {viewTab === 'my-requests' && (
         <div>
           <h3 className="chart-title" style={{ marginBottom: '16px' }}>
-            Submitted material requests ({myRequests.length})
+            {t('submitted')} {t('materialRequests')} ({myRequests.length})
           </h3>
 
           {myRequests.length === 0 ? (
             <div className="chart-card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              You have not submitted any material requests yet.
+              {t('noRequestsYet')}
             </div>
           ) : (
             myRequests.map(req => (
@@ -355,7 +363,7 @@ export default function ContractorDashboard({ user }) {
                       {req.requestId}
                     </span>
                     <span className={`status-pill status-${req.status.toLowerCase()}`}>
-                      {req.status}
+                      {t(req.status.toLowerCase()) || req.status}
                     </span>
                   </div>
 
@@ -365,7 +373,7 @@ export default function ContractorDashboard({ user }) {
                 </div>
 
                 <div style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '8px' }}>
-                  Property: {req.propertyName} ({req.propertyAddress})
+                  📍 Property: {req.propertyName} {req.propertyAddress && `(${req.propertyAddress})`}
                 </div>
 
                 {req.notes && (
@@ -375,7 +383,7 @@ export default function ContractorDashboard({ user }) {
                 )}
 
                 <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                  Items Requested:
+                  {t('itemsRequested')}:
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {req.items.map((item, idx) => (
@@ -390,7 +398,7 @@ export default function ContractorDashboard({ user }) {
         </div>
       )}
 
-      {/* Tab 3: Properties */}
+      {/* TAB 3: PROPERTIES */}
       {viewTab === 'properties' && (
         <PropertyCatalog
           onSelectPropertyForOrder={(propName) => {

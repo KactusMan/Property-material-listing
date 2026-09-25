@@ -9,8 +9,10 @@ import {
   Settings, 
   LogOut 
 } from 'lucide-react';
+import { useI18n } from '../lib/i18n';
 
 export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
+  const { t } = useI18n();
   const isAdmin = user?.role === 'admin';
 
   return (
@@ -41,7 +43,7 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
             onClick={() => setActiveTab('home')}
           >
             <Home size={18} />
-            <span className="sidebar-text">Dashboard</span>
+            <span className="sidebar-text">{t('dashboard')}</span>
           </li>
 
           <li
@@ -49,7 +51,7 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
             onClick={() => setActiveTab('properties')}
           >
             <Building size={18} />
-            <span className="sidebar-text">Properties</span>
+            <span className="sidebar-text">{t('properties')}</span>
           </li>
 
           <li
@@ -57,7 +59,7 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
             onClick={() => setActiveTab('requests')}
           >
             <FileText size={18} />
-            <span className="sidebar-text">Material Requests</span>
+            <span className="sidebar-text">{t('materialRequests')}</span>
           </li>
 
           <li
@@ -65,7 +67,7 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
             onClick={() => setActiveTab('catalog')}
           >
             <Package size={18} />
-            <span className="sidebar-text">Materials Catalog</span>
+            <span className="sidebar-text">{t('materialsCatalog')}</span>
           </li>
         </ul>
 
@@ -78,13 +80,13 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
               onClick={() => setActiveTab('contractors')}
             >
               <Users size={18} />
-              <span className="sidebar-text">Contractors</span>
+              <span className="sidebar-text">{t('contractors')}</span>
             </li>
           )}
           
           <li className="nav-item">
             <Settings size={18} />
-            <span className="sidebar-text">Settings</span>
+            <span className="sidebar-text">{t('settings')}</span>
           </li>
         </ul>
 
@@ -98,7 +100,7 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
           style={{ width: '100%', border: 'none', background: 'transparent', color: '#dc2626' }}
         >
           <LogOut size={18} />
-          <span className="sidebar-text">Log Out</span>
+          <span className="sidebar-text">{t('logout')}</span>
         </button>
       </div>
     </aside>
