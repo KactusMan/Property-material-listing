@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { Building2, ShieldCheck, Eye, EyeOff, Lock, Mail, User, Sparkles, ArrowRight } from 'lucide-react';
+import { Building2, Eye, EyeOff } from 'lucide-react';
 
 export default function AuthPage({ onLoginSuccess }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
-  const [role, setRole] = useState('contractor'); // 'contractor' | 'admin'
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -14,18 +12,6 @@ export default function AuthPage({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const fillQuickCreds = (type) => {
-    if (type === 'admin') {
-      setRole('admin');
-      setEmail('admin@propertymaterials.com');
-      setPassword('admin123');
-    } else {
-      setRole('contractor');
-      setEmail('contractor@apex.com');
-      setPassword('contractor123');
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -33,7 +19,7 @@ export default function AuthPage({ onLoginSuccess }) {
 
     const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
     const payload = mode === 'register' 
-      ? { name, email, password, role, companyName }
+      ? { name, email, password, companyName }
       : { email, password };
 
     try {
@@ -82,26 +68,12 @@ export default function AuthPage({ onLoginSuccess }) {
 
         <div className="auth-hero-content">
           <h1 className="auth-hero-title">
-            Where Every <span>Handshake Counts</span>
+            Materials, <span>without the back-and-forth.</span>
           </h1>
           <p className="auth-hero-subtitle">
-            The enterprise real-estate platform connecting contractors & admins with real-time material workflows, budget approvals, and status tracking.
+            A focused materials workflow for properties, contractors, and purchasing teams.
           </p>
 
-          <div className="auth-stats-row">
-            <div className="auth-stat-item">
-              <h3>500+</h3>
-              <p>Projects Powered</p>
-            </div>
-            <div className="auth-stat-item">
-              <h3>$2.1M</h3>
-              <p>Monies Logged</p>
-            </div>
-            <div className="auth-stat-item">
-              <h3>98%</h3>
-              <p>On-Time Delivery</p>
-            </div>
-          </div>
         </div>
 
         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -113,23 +85,8 @@ export default function AuthPage({ onLoginSuccess }) {
       <div className="auth-right">
         <div className="auth-card">
           <div className="auth-header">
-            <h2>{role === 'admin' ? 'Admin Portal Access' : 'Contractor Portal Access'}</h2>
-            <p>Enter your account credentials to access your dashboard</p>
-          </div>
-
-          <div className="auth-role-selector">
-            <button
-              className={`role-tab-btn ${role === 'contractor' ? 'active' : ''}`}
-              onClick={() => { setRole('contractor'); setError(''); }}
-            >
-              Contractor Login
-            </button>
-            <button
-              className={`role-tab-btn ${role === 'admin' ? 'active' : ''}`}
-              onClick={() => { setRole('admin'); setError(''); }}
-            >
-              Admin Login
-            </button>
+            <h2>{mode === 'register' ? 'Create contractor account' : 'Sign in'}</h2>
+            <p>Use the account provided by your property materials team.</p>
           </div>
 
           {error && (
@@ -163,7 +120,7 @@ export default function AuthPage({ onLoginSuccess }) {
                 </div>
 
                 <div className="auth-form-group">
-                  <label>Company / Vendor Name</label>
+              <label>Company name</label>
                   <input
                     type="text"
                     className="auth-input"
@@ -180,7 +137,7 @@ export default function AuthPage({ onLoginSuccess }) {
               <input
                 type="email"
                 className="auth-input"
-                placeholder={role === 'admin' ? 'admin@propertymaterials.com' : 'contractor@apex.com'}
+                placeholder="you@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -193,7 +150,7 @@ export default function AuthPage({ onLoginSuccess }) {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   className="auth-input"
-                  placeholder="••••••••"
+                placeholder={mode === 'register' ? 'At least 10 characters' : 'Your password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -225,48 +182,6 @@ export default function AuthPage({ onLoginSuccess }) {
               {loading ? 'Authenticating...' : (mode === 'register' ? 'Create Account' : 'Sign In to Dashboard')}
             </button>
           </form>
-
-          <div className="demo-creds-box">
-            <div style={{ fontWeight: '700', marginBottom: '6px', color: 'var(--text-main)' }}>
-              Quick Credentials (Click to fill):
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => fillQuickCreds('contractor')}
-                style={{
-                  flex: 1,
-                  padding: '6px 10px',
-                  background: 'white',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  fontSize: '0.8rem',
-                  fontWeight: '700',
-                  color: 'var(--primary-blue)',
-                  cursor: 'pointer'
-                }}
-              >
-                Apex Contractor
-              </button>
-              <button
-                type="button"
-                onClick={() => fillQuickCreds('admin')}
-                style={{
-                  flex: 1,
-                  padding: '6px 10px',
-                  background: 'white',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  fontSize: '0.8rem',
-                  fontWeight: '700',
-                  color: 'var(--primary-blue)',
-                  cursor: 'pointer'
-                }}
-              >
-                Admin Manager
-              </button>
-            </div>
-          </div>
 
           <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.9rem' }}>
             {mode === 'login' ? (

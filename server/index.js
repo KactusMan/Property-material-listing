@@ -8,7 +8,6 @@ import { Property } from './models/Property.js';
 import { Contractor } from './models/Contractor.js';
 import { Request } from './models/Request.js';
 import { User } from './models/User.js';
-import { seedDatabase } from './seed.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,14 +16,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'propertymaterials_secret_key_2026'
 app.use(cors());
 app.use(express.json());
 
-// Initialize DB
-connectDB().then(async () => {
-  const userCount = await User.countDocuments();
-  if (userCount === 0) {
-    console.log('No users found. Running database seeder...');
-    await seedDatabase();
-  }
-});
+// Connect once on startup. Data imports are an explicit deployment action.
+connectDB();
 
 /* Helper to generate JWT Token */
 const generateToken = (user) => {
@@ -36,7 +29,7 @@ const generateToken = (user) => {
 };
 
 /* Middleware to authenticate token */
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Authentication token missing.' });
@@ -45,11 +38,22 @@ const authMiddleware = (req, res, next) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    const user = await User.findById(decoded.id).select('-password').lean();
+    if (!user || !user.active) {
+      return res.status(401).json({ error: 'Your account is not active.' });
+    }
+    req.user = user;
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token.' });
   }
+};
+
+const adminOnly = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Administrator access is required.' });
+  }
+  next();
 };
 
 /* =========================================================
@@ -59,10 +63,13 @@ const authMiddleware = (req, res, next) => {
 // 1. Register User (Contractor)
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password, role, companyName, contractorId } = req.body;
+    const { name, email, password, companyName } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required.' });
+    }
+    if (password.length < 10) {
+      return res.status(400).json({ error: 'Use a password with at least 10 characters.' });
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -74,9 +81,9 @@ app.post('/api/auth/register', async (req, res) => {
       name,
       email: email.toLowerCase(),
       password, // Password hashed automatically via pre-save hook in User model
-      role: role === 'admin' ? 'admin' : 'contractor',
+      role: 'contractor',
       companyName: companyName || name,
-      contractorId: contractorId || ''
+      contractorId: ''
     });
 
     const token = generateToken(newUser);
@@ -158,12 +165,12 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
    ========================================================= */
 
 // Get Active Products (Prices hidden for Vendor security, unless Admin)
-app.get('/api/products', async (req, res) => {
+app.get('/api/products', authMiddleware, async (req, res) => {
   try {
     const products = await Product.find({ active: true }).lean();
     
     // Security: hide expectedPrice if not admin
-    const isAdmin = req.headers['x-user-role'] === 'admin';
+    const isAdmin = req.user.role === 'admin';
 
     const safeProducts = products.map(p => ({
       id: p.productId,
@@ -184,7 +191,7 @@ app.get('/api/products', async (req, res) => {
 });
 
 // Get Active Properties
-app.get('/api/properties', async (req, res) => {
+app.get('/api/properties', authMiddleware, async (req, res) => {
   try {
     const properties = await Property.find({ active: true }).lean();
     const safeProperties = properties.map(p => ({
@@ -199,7 +206,7 @@ app.get('/api/properties', async (req, res) => {
 });
 
 // Get Active Contractors
-app.get('/api/contractors', async (req, res) => {
+app.get('/api/contractors', authMiddleware, adminOnly, async (req, res) => {
   try {
     const contractors = await Contractor.find({ active: true }).lean();
     const safeContractors = contractors.map(c => ({
@@ -213,19 +220,12 @@ app.get('/api/contractors', async (req, res) => {
 });
 
 // Get Requests (Filtered by role: Contractor sees their own; Admin sees all)
-app.get('/api/requests', async (req, res) => {
+app.get('/api/requests', authMiddleware, async (req, res) => {
   try {
-    const role = req.headers['x-user-role'];
-    const email = req.headers['x-user-email'];
-    const company = req.headers['x-user-company'];
-
     let filter = {};
-    if (role === 'contractor') {
+    if (req.user.role === 'contractor') {
       filter = {
-        $or: [
-          { contractorEmail: email },
-          { contractorName: company }
-        ]
+        contractorEmail: req.user.email
       };
     }
 
@@ -237,12 +237,15 @@ app.get('/api/requests', async (req, res) => {
 });
 
 // Save Material Request
-app.post('/api/requests', async (req, res) => {
+app.post('/api/requests', authMiddleware, async (req, res) => {
   try {
-    const { contractor, property, notes, items, contractorEmail } = req.body;
+    const { property, notes, items } = req.body;
 
-    if (!contractor || !property) {
-      return res.status(400).json({ error: 'Vendor and Property are required.' });
+    if (req.user.role !== 'contractor') {
+      return res.status(403).json({ error: 'Only contractors can submit material requests.' });
+    }
+    if (!property) {
+      return res.status(400).json({ error: 'A property is required.' });
     }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -255,10 +258,10 @@ app.post('/api/requests', async (req, res) => {
     const propertyName = propDoc ? propDoc.name : property;
     const propertyAddress = propDoc ? propDoc.address : '';
 
-    const contDoc = await Contractor.findOne({ 
-      $or: [{ name: contractor }, { contractorId: contractor }] 
-    }).lean();
-    const contractorName = contDoc ? contDoc.name : contractor;
+    const contDoc = req.user.contractorId
+      ? await Contractor.findOne({ contractorId: req.user.contractorId }).lean()
+      : null;
+    const contractorName = contDoc ? contDoc.name : (req.user.companyName || req.user.name);
 
     const productIds = items.map(i => i.id);
     const dbProducts = await Product.find({ productId: { $in: productIds } }).lean();
@@ -303,7 +306,7 @@ app.post('/api/requests', async (req, res) => {
       requestId,
       contractorId: contDoc ? contDoc.contractorId : '',
       contractorName,
-      contractorEmail: contractorEmail || '',
+      contractorEmail: req.user.email,
       propertyId: propDoc ? propDoc.propertyId : '',
       propertyName,
       propertyAddress,
@@ -327,10 +330,14 @@ app.post('/api/requests', async (req, res) => {
 });
 
 // Update Request Status (Admin action)
-app.patch('/api/requests/:requestId/status', async (req, res) => {
+app.patch('/api/requests/:requestId/status', authMiddleware, adminOnly, async (req, res) => {
   try {
     const { requestId } = req.params;
     const { status } = req.body;
+    const allowedStatuses = ['Submitted', 'Approved', 'Ordered', 'Delivered', 'Rejected'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid request status.' });
+    }
 
     const updated = await Request.findOneAndUpdate(
       { requestId },

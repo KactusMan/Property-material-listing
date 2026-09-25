@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Building, MapPin, Plus, CheckCircle, Package } from 'lucide-react';
+import { apiFetch } from '../lib/api';
 
 const PROPERTY_IMAGES = [
   'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80',
@@ -14,7 +15,7 @@ export default function PropertyCatalog({ onSelectPropertyForOrder }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/properties')
+    apiFetch('/api/properties')
       .then(res => res.json())
       .then(data => {
         setProperties(data);
@@ -29,7 +30,7 @@ export default function PropertyCatalog({ onSelectPropertyForOrder }) {
   if (loading) {
     return (
       <div style={{ padding: '24px', textAlign: 'center', fontWeight: '700', color: 'var(--text-muted)' }}>
-        Loading 19 active property listings from MongoDB...
+        Loading active properties…
       </div>
     );
   }
@@ -70,11 +71,6 @@ export default function PropertyCatalog({ onSelectPropertyForOrder }) {
                   {prop.address}
                 </div>
 
-                <div className="property-specs-pills">
-                  <span className="spec-pill">4 Bedroom</span>
-                  <span className="spec-pill">3 Baths</span>
-                  <span className="spec-pill">340 sq m</span>
-                </div>
 
                 <button
                   className="btn-auth-submit"

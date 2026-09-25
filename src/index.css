@@ -246,21 +246,6 @@ body {
   transform: translateY(-1px);
 }
 
-/* Demo Quick Login Credential Badges */
-.demo-creds-box {
-  background: var(--primary-blue-light);
-  border: 1px solid var(--primary-blue-border);
-  padding: 14px 18px;
-  border-radius: var(--radius-md);
-  margin-top: 24px;
-  font-size: 0.85rem;
-}
-
-.demo-creds-box strong {
-  color: var(--primary-blue);
-  font-weight: 800;
-}
-
 /* =========================================================
    DASHBOARD LAYOUT (Screenshot 1 Match: Left Sidebar + Main)
    ========================================================= */

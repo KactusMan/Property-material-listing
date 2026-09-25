@@ -11,7 +11,7 @@ export default function SuccessModal({ requestId, onClose }) {
         <h2 className="modal-title">Request Submitted!</h2>
         <div className="modal-body">
           <p style={{ marginBottom: '12px' }}>
-            Your material request has been securely recorded in the <strong>MongoDB Database</strong>.
+            Your material request was submitted and is ready for admin review.
           </p>
           <div style={{
             background: 'var(--pink-light)',

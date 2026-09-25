@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import PropertyCatalog from './PropertyCatalog';
 import SuccessModal from './SuccessModal';
+import { apiFetch } from '../lib/api';
 
 export default function ContractorDashboard({ user }) {
   const [properties, setProperties] = useState([]);
@@ -43,16 +44,14 @@ export default function ContractorDashboard({ user }) {
     setError('');
     try {
       const [resProp, resProd, resReq] = await Promise.all([
-        fetch('/api/properties'),
-        fetch('/api/products'),
-        fetch('/api/requests', {
-          headers: {
-            'x-user-role': user.role,
-            'x-user-email': user.email,
-            'x-user-company': user.companyName
-          }
-        })
+        apiFetch('/api/properties'),
+        apiFetch('/api/products'),
+        apiFetch('/api/requests')
       ]);
+
+      if (![resProp, resProd, resReq].every((response) => response.ok)) {
+        throw new Error('Could not load account data.');
+      }
 
       const dataProp = await resProp.json();
       const dataProd = await resProd.json();
@@ -63,7 +62,7 @@ export default function ContractorDashboard({ user }) {
       setMyRequests(dataReq);
     } catch (err) {
       console.error(err);
-      setError('Failed to load data from MongoDB server.');
+      setError('Unable to load your materials and requests. Please sign in again.');
     } finally {
       setLoading(false);
     }
@@ -106,12 +105,10 @@ export default function ContractorDashboard({ user }) {
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/requests', {
+      const response = await apiFetch('/api/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contractor: user.companyName || user.name,
-          contractorEmail: user.email,
           property: selectedProperty,
           notes,
           items: itemsToSubmit
@@ -150,7 +147,6 @@ export default function ContractorDashboard({ user }) {
         <div className="metric-card-pro">
           <div className="metric-header">
             <span className="metric-title">Total Submitted Requests</span>
-            <span className="trend-badge trend-up">↑ 12%</span>
           </div>
           <div className="metric-number">{myRequests.length}</div>
         </div>
@@ -158,7 +154,6 @@ export default function ContractorDashboard({ user }) {
         <div className="metric-card-pro">
           <div className="metric-header">
             <span className="metric-title">Approved by Admin</span>
-            <span className="trend-badge trend-up">✓ Confirmed</span>
           </div>
           <div className="metric-number" style={{ color: 'var(--primary-blue)' }}>
             {approvedRequests.length}
@@ -168,7 +163,6 @@ export default function ContractorDashboard({ user }) {
         <div className="metric-card-pro">
           <div className="metric-header">
             <span className="metric-title">Pending Admin Review</span>
-            <span className="trend-badge trend-down">Pending</span>
           </div>
           <div className="metric-number" style={{ color: '#d97706' }}>
             {pendingRequests.length}
@@ -182,21 +176,21 @@ export default function ContractorDashboard({ user }) {
           className={`role-tab-btn ${viewTab === 'request' ? 'active' : ''}`}
           onClick={() => setViewTab('request')}
         >
-          🌸 New Material Order
+          New material request
         </button>
 
         <button
           className={`role-tab-btn ${viewTab === 'my-requests' ? 'active' : ''}`}
           onClick={() => setViewTab('my-requests')}
         >
-          📋 My Requests & Approvals ({myRequests.length})
+          My requests ({myRequests.length})
         </button>
 
         <button
           className={`role-tab-btn ${viewTab === 'properties' ? 'active' : ''}`}
           onClick={() => setViewTab('properties')}
         >
-          🏙️ Property Directory
+          Properties
         </button>
       </div>
 
@@ -334,7 +328,7 @@ export default function ContractorDashboard({ user }) {
                 disabled={submitting || totalSelectedCount === 0}
               >
                 <Send size={18} />
-                {submitting ? 'Submitting to Admin...' : 'Submit Material Query'}
+                {submitting ? 'Submitting…' : 'Submit material request'}
               </button>
             </div>
           </div>
@@ -345,12 +339,12 @@ export default function ContractorDashboard({ user }) {
       {viewTab === 'my-requests' && (
         <div>
           <h3 className="chart-title" style={{ marginBottom: '16px' }}>
-            Submitted Material Queries ({myRequests.length})
+            Submitted material requests ({myRequests.length})
           </h3>
 
           {myRequests.length === 0 ? (
             <div className="chart-card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              You have not submitted any material queries yet.
+              You have not submitted any material requests yet.
             </div>
           ) : (
             myRequests.map(req => (

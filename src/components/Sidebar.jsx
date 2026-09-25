@@ -49,7 +49,7 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
             onClick={() => setActiveTab('properties')}
           >
             <Building size={18} />
-            <span className="sidebar-text">Properties (19)</span>
+            <span className="sidebar-text">Properties</span>
           </li>
 
           <li
@@ -88,11 +88,6 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
           </li>
         </ul>
 
-        {/* Promo Card */}
-        <div className="promo-card">
-          <h4>Enterprise Pro</h4>
-          <p>Real-time material workflow & budget release enabled.</p>
-        </div>
       </div>
 
       {/* Logout */}

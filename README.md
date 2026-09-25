@@ -1,16 +1,24 @@
-# React + Vite
+# EstateFlow materials dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A mobile-friendly materials workflow for property teams. Contractors choose an approved property and approved materials, submit quantities with notes, and track their request. Administrators review the exact requested products, costs, supplier links, and move each request through Submitted, Approved, Ordered, and Delivered.
 
-Currently, two official plugins are available:
+## Before first use
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Copy `.env.example` to `.env` and set a MongoDB connection string, a long random `JWT_SECRET`, and the first administrator's credentials.
+2. Run `npm install`.
+3. Run `npm run import-data` once. This imports the checked-in workbook's products, properties, and contractors, and creates the initial administrator only if no users exist.
+4. Run `npm run dev` for local development, or deploy using the included Vercel configuration.
 
-## React Compiler
+The workbook import is safe to rerun. It updates existing products, properties, and contractors by their stable IDs. It does not create material requests or publish passwords.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Access rules
 
-## Expanding the Oxlint configuration
+- New registrations create contractor accounts only. Administrator accounts must be created by the team.
+- Passwords are bcrypt-hashed before storage.
+- The API validates a signed session token for every property, product, contractor, and request operation.
+- Contractors can only read their own requests and can only submit their own requests.
+- Only administrators can review requests or change a request status.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Later enhancements
+
+Email notifications, password recovery, translations, and supplier-cart automation are intentionally out of this first release.

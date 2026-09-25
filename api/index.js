@@ -33,12 +33,40 @@ const generateToken = (user) => {
   );
 };
 
+const authMiddleware = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication token missing.' });
+  }
+  try {
+    const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password').lean();
+    if (!user || !user.active) {
+      return res.status(401).json({ error: 'Your account is not active.' });
+    }
+    req.user = user;
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired token.' });
+  }
+};
+
+const adminOnly = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Administrator access is required.' });
+  }
+  next();
+};
+
 /* AUTH ENDPOINTS */
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password, role, companyName, contractorId } = req.body;
+    const { name, email, password, companyName } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required.' });
+    }
+    if (password.length < 10) {
+      return res.status(400).json({ error: 'Use a password with at least 10 characters.' });
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -50,9 +78,9 @@ app.post('/api/auth/register', async (req, res) => {
       name,
       email: email.toLowerCase(),
       password,
-      role: role === 'admin' ? 'admin' : 'contractor',
+      role: 'contractor',
       companyName: companyName || name,
-      contractorId: contractorId || ''
+      contractorId: ''
     });
 
     const token = generateToken(newUser);
@@ -109,10 +137,10 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 /* CORE DATA ENDPOINTS */
-app.get('/api/products', async (req, res) => {
+app.get('/api/products', authMiddleware, async (req, res) => {
   try {
     const products = await Product.find({ active: true }).lean();
-    const isAdmin = req.headers['x-user-role'] === 'admin';
+    const isAdmin = req.user.role === 'admin';
     const safeProducts = products.map(p => ({
       id: p.productId,
       name: p.name,
@@ -130,7 +158,7 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-app.get('/api/properties', async (req, res) => {
+app.get('/api/properties', authMiddleware, async (req, res) => {
   try {
     const properties = await Property.find({ active: true }).lean();
     res.json(properties.map(p => ({ id: p.propertyId, name: p.name, address: p.address })));
@@ -139,7 +167,7 @@ app.get('/api/properties', async (req, res) => {
   }
 });
 
-app.get('/api/contractors', async (req, res) => {
+app.get('/api/contractors', authMiddleware, adminOnly, async (req, res) => {
   try {
     const contractors = await Contractor.find({ active: true }).lean();
     res.json(contractors.map(c => ({ id: c.contractorId, name: c.name })));
@@ -148,19 +176,12 @@ app.get('/api/contractors', async (req, res) => {
   }
 });
 
-app.get('/api/requests', async (req, res) => {
+app.get('/api/requests', authMiddleware, async (req, res) => {
   try {
-    const role = req.headers['x-user-role'];
-    const email = req.headers['x-user-email'];
-    const company = req.headers['x-user-company'];
-
     let filter = {};
-    if (role === 'contractor') {
+    if (req.user.role === 'contractor') {
       filter = {
-        $or: [
-          { contractorEmail: email },
-          { contractorName: company }
-        ]
+        contractorEmail: req.user.email
       };
     }
 
@@ -171,11 +192,14 @@ app.get('/api/requests', async (req, res) => {
   }
 });
 
-app.post('/api/requests', async (req, res) => {
+app.post('/api/requests', authMiddleware, async (req, res) => {
   try {
-    const { contractor, property, notes, items, contractorEmail } = req.body;
-    if (!contractor || !property) {
-      return res.status(400).json({ error: 'Vendor and Property are required.' });
+    const { property, notes, items } = req.body;
+    if (req.user.role !== 'contractor') {
+      return res.status(403).json({ error: 'Only contractors can submit material requests.' });
+    }
+    if (!property) {
+      return res.status(400).json({ error: 'A property is required.' });
     }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -183,7 +207,9 @@ app.post('/api/requests', async (req, res) => {
     }
 
     const propDoc = await Property.findOne({ $or: [{ name: property }, { propertyId: property }] }).lean();
-    const contDoc = await Contractor.findOne({ $or: [{ name: contractor }, { contractorId: contractor }] }).lean();
+    const contDoc = req.user.contractorId
+      ? await Contractor.findOne({ contractorId: req.user.contractorId }).lean()
+      : null;
 
     const productIds = items.map(i => i.id);
     const dbProducts = await Product.find({ productId: { $in: productIds } }).lean();
@@ -217,8 +243,8 @@ app.post('/api/requests', async (req, res) => {
     const newRequest = await Request.create({
       requestId,
       contractorId: contDoc ? contDoc.contractorId : '',
-      contractorName: contDoc ? contDoc.name : contractor,
-      contractorEmail: contractorEmail || '',
+      contractorName: contDoc ? contDoc.name : (req.user.companyName || req.user.name),
+      contractorEmail: req.user.email,
       propertyId: propDoc ? propDoc.propertyId : '',
       propertyName: propDoc ? propDoc.name : property,
       propertyAddress: propDoc ? propDoc.address : '',
@@ -234,10 +260,14 @@ app.post('/api/requests', async (req, res) => {
   }
 });
 
-app.patch('/api/requests/:requestId/status', async (req, res) => {
+app.patch('/api/requests/:requestId/status', authMiddleware, adminOnly, async (req, res) => {
   try {
     const { requestId } = req.params;
     const { status } = req.body;
+    const allowedStatuses = ['Submitted', 'Approved', 'Ordered', 'Delivered', 'Rejected'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid request status.' });
+    }
 
     const updated = await Request.findOneAndUpdate(
       { requestId },

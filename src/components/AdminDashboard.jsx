@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import PropertyCatalog from './PropertyCatalog';
+import { apiFetch } from '../lib/api';
 
 export default function AdminDashboard({ user }) {
   const [requests, setRequests] = useState([]);
@@ -32,17 +33,16 @@ export default function AdminDashboard({ user }) {
     setLoading(true);
     try {
       const [resReq, resCont] = await Promise.all([
-        fetch('/api/requests', {
-          headers: {
-            'x-user-role': user.role,
-            'x-user-email': user.email
-          }
-        }),
-        fetch('/api/contractors')
+        apiFetch('/api/requests'),
+        apiFetch('/api/contractors')
       ]);
 
       const dataReq = await resReq.json();
       const dataCont = await resCont.json();
+
+      if (!resReq.ok || !resCont.ok) {
+        throw new Error('Could not load administrator data.');
+      }
 
       setRequests(dataReq);
       setContractors(dataCont);
@@ -55,7 +55,7 @@ export default function AdminDashboard({ user }) {
 
   const handleStatusUpdate = async (requestId, newStatus) => {
     try {
-      const res = await fetch(`/api/requests/${requestId}/status`, {
+      const res = await apiFetch(`/api/requests/${requestId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -91,7 +91,6 @@ export default function AdminDashboard({ user }) {
         <div className="metric-card-pro">
           <div className="metric-header">
             <span className="metric-title">Total Monies Allocated</span>
-            <span className="trend-badge trend-up">↑ 4.2%</span>
           </div>
           <div className="metric-number" style={{ color: 'var(--primary-blue)' }}>
             ${totalMonies.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -101,7 +100,6 @@ export default function AdminDashboard({ user }) {
         <div className="metric-card-pro">
           <div className="metric-header">
             <span className="metric-title">Pending Admin Review</span>
-            <span className="trend-badge trend-down">Pending</span>
           </div>
           <div className="metric-number" style={{ color: '#d97706' }}>
             {pendingRequests.length}
@@ -111,7 +109,6 @@ export default function AdminDashboard({ user }) {
         <div className="metric-card-pro">
           <div className="metric-header">
             <span className="metric-title">Approved Orders</span>
-            <span className="trend-badge trend-up">✓ Confirmed</span>
           </div>
           <div className="metric-number" style={{ color: '#2e7d32' }}>
             {approvedRequests.length}
@@ -121,7 +118,6 @@ export default function AdminDashboard({ user }) {
         <div className="metric-card-pro">
           <div className="metric-header">
             <span className="metric-title">Active Contractors</span>
-            <span className="trend-badge trend-up">47 Active</span>
           </div>
           <div className="metric-number">
             {contractors.length}
@@ -135,21 +131,21 @@ export default function AdminDashboard({ user }) {
           className={`role-tab-btn ${adminTab === 'overview' ? 'active' : ''}`}
           onClick={() => setAdminTab('overview')}
         >
-          📊 Dashboard Analytics
+          Overview
         </button>
 
         <button
           className={`role-tab-btn ${adminTab === 'requests' ? 'active' : ''}`}
           onClick={() => setAdminTab('requests')}
         >
-          📋 Material Approvals ({requests.length})
+          Material approvals ({requests.length})
         </button>
 
         <button
           className={`role-tab-btn ${adminTab === 'properties' ? 'active' : ''}`}
           onClick={() => setAdminTab('properties')}
         >
-          🏙️ Property Directory (19)
+          Properties
         </button>
       </div>
 
@@ -162,7 +158,7 @@ export default function AdminDashboard({ user }) {
               <div className="chart-header">
                 <div>
                   <h4 className="chart-title">Material Requests vs Approvals</h4>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Monthly distribution across 19 active property sites</p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Request activity based on the current material workflow</p>
                 </div>
                 <span className="spec-pill" style={{ background: 'var(--primary-blue-light)', color: 'var(--primary-blue)' }}>Monthly</span>
               </div>
@@ -254,8 +250,8 @@ export default function AdminDashboard({ user }) {
                       </div>
 
                       <div style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-main)', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                        <span>👤 Vendor: <strong>{req.contractorName}</strong></span>
-                        <span>🏙️ Property: <strong>{req.propertyName}</strong> ({req.propertyAddress})</span>
+                        <span>Contractor: <strong>{req.contractorName}</strong></span>
+                        <span>Property: <strong>{req.propertyName}</strong> ({req.propertyAddress})</span>
                       </div>
                     </div>
 

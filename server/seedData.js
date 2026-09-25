@@ -6,7 +6,7 @@ export const loadExcelData = () => {
   const filePath = path.resolve(process.cwd(), 'property materials manager.xlsx');
   
   if (!fs.existsSync(filePath)) {
-    console.warn('Excel file not found at', filePath, '. Using fallback defaults.');
+    console.warn('Workbook not found at', filePath);
     return null;
   }
 
@@ -26,7 +26,7 @@ export const loadExcelData = () => {
       expectedPrice: Number(row['Expected Price'] || row['expected price'] || 0),
       image: row['Image URL'] || '',
       notes: row['Notes'] || '',
-      active: row['Active'] === false ? false : true
+      active: row['Active'] !== false && row['Active'] !== 0 && row['Active'] !== '0'
     }));
 
     // Parse Properties
@@ -36,7 +36,7 @@ export const loadExcelData = () => {
       propertyId: row['Property ID'] || `PR${String(idx + 1).padStart(3, '0')}`,
       name: row['Property Name'] || `PR00${idx + 1}`,
       address: row['Address'] || row['Property Name'] || 'Address Pending',
-      active: row['Active'] === false ? false : true
+      active: row['Active'] !== false && row['Active'] !== 0 && row['Active'] !== '0'
     }));
 
     // Parse Contractors
@@ -45,7 +45,7 @@ export const loadExcelData = () => {
     const contractors = rawContractors.map((row, idx) => ({
       contractorId: row['Contractor ID'] || `C${String(idx + 1).padStart(3, '0')}`,
       name: row['Contractor Name'] || `Contractor ${idx + 1}`,
-      active: row['Active'] === false ? false : true
+      active: row['Active'] !== false && row['Active'] !== 0 && row['Active'] !== '0'
     }));
 
     return { products, properties, contractors };
