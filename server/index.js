@@ -87,13 +87,25 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'An account with this email already exists.' });
     }
 
+    const count = await Contractor.countDocuments();
+    const contractorId = `C${String(count + 1).padStart(3, '0')}`;
+
     const newUser = await User.create({
       name,
       email: email.toLowerCase(),
       password,
       role: 'contractor',
       companyName: companyName || name,
-      contractorId: ''
+      contractorId
+    });
+
+    await Contractor.create({
+      contractorId,
+      name,
+      email: email.toLowerCase(),
+      companyName: companyName || name,
+      assignedProperties: [],
+      active: true
     });
 
     const token = generateToken(newUser);

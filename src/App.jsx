@@ -9,10 +9,11 @@ import { apiFetch } from './lib/api';
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'properties' | 'requests' | 'catalog'
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'properties' | 'requests' | 'contractors' | 'products'
+  const [selectedPropertyForOrder, setSelectedPropertyForOrder] = useState('');
   const [globalSearch, setGlobalSearch] = useState('');
 
-  // Restore only a still-valid session, so changing accounts works from one browser.
+  // Restore session
   useEffect(() => {
     const savedUser = localStorage.getItem('pm_user');
     const token = localStorage.getItem('pm_token');
@@ -37,7 +38,12 @@ export default function App() {
     setUser(null);
   };
 
-  // If not logged in, render Split-Screen Auth Page (Screenshot 2 Match)
+  const handleSelectPropertyForOrder = (propertyName) => {
+    setSelectedPropertyForOrder(propertyName);
+    setActiveTab('home');
+  };
+
+  // Render auth page if not logged in
   if (!user) {
     return <AuthPage onLoginSuccess={(loggedInUser) => setUser(loggedInUser)} />;
   }
@@ -46,17 +52,20 @@ export default function App() {
 
   return (
     <div className="dashboard-layout">
-      {/* Left Sidebar (Screenshot 1 Match) */}
+      {/* Left Sidebar */}
       <Sidebar
         user={user}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          if (tab !== 'home') setSelectedPropertyForOrder('');
+        }}
         onLogout={handleLogout}
       />
 
       {/* Main Wrapper */}
       <div className="main-wrapper">
-        {/* Top Navigation Header (Screenshot 1 Match) */}
+        {/* Top Navigation Header */}
         <TopBar
           user={user}
           searchTerm={globalSearch}
@@ -67,30 +76,21 @@ export default function App() {
         <main className="content-area">
           {activeTab === 'home' && (
             isAdmin ? (
-              <AdminDashboard user={user} />
+              <AdminDashboard user={user} activeTab={activeTab} />
             ) : (
-              <ContractorDashboard user={user} />
+              <ContractorDashboard
+                user={user}
+                initialSelectedProperty={selectedPropertyForOrder}
+              />
             )
           )}
 
           {activeTab === 'properties' && (
-            <PropertyCatalog onSelectPropertyForOrder={() => setActiveTab('home')} />
+            <PropertyCatalog onSelectPropertyForOrder={handleSelectPropertyForOrder} />
           )}
 
-          {activeTab === 'requests' && (
-            isAdmin ? (
-              <AdminDashboard user={user} />
-            ) : (
-              <ContractorDashboard user={user} />
-            )
-          )}
-
-          {activeTab === 'catalog' && (
-            <ContractorDashboard user={user} />
-          )}
-
-          {activeTab === 'contractors' && (
-            <AdminDashboard user={user} />
+          {isAdmin && activeTab !== 'home' && activeTab !== 'properties' && (
+            <AdminDashboard user={user} activeTab={activeTab} />
           )}
         </main>
       </div>

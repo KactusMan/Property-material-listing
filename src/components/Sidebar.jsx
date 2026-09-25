@@ -6,7 +6,6 @@ import {
   Package, 
   FileText, 
   Users, 
-  Settings, 
   LogOut 
 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
@@ -36,7 +35,7 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
         </div>
 
         {/* General Nav */}
-        <div className="sidebar-section-title">General</div>
+        <div className="sidebar-section-title">Navigation</div>
         <ul className="nav-list">
           <li
             className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
@@ -54,42 +53,35 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }) {
             <span className="sidebar-text">{t('properties')}</span>
           </li>
 
-          <li
-            className={`nav-item ${activeTab === 'requests' ? 'active' : ''}`}
-            onClick={() => setActiveTab('requests')}
-          >
-            <FileText size={18} />
-            <span className="sidebar-text">{t('materialRequests')}</span>
-          </li>
-
-          <li
-            className={`nav-item ${activeTab === 'catalog' ? 'active' : ''}`}
-            onClick={() => setActiveTab('catalog')}
-          >
-            <Package size={18} />
-            <span className="sidebar-text">{t('materialsCatalog')}</span>
-          </li>
-        </ul>
-
-        {/* Platform Section */}
-        <div className="sidebar-section-title">Platform</div>
-        <ul className="nav-list">
+          {/* Admin Specific Sidebar Items */}
           {isAdmin && (
-            <li
-              className={`nav-item ${activeTab === 'contractors' ? 'active' : ''}`}
-              onClick={() => setActiveTab('contractors')}
-            >
-              <Users size={18} />
-              <span className="sidebar-text">{t('contractors')}</span>
-            </li>
-          )}
-          
-          <li className="nav-item">
-            <Settings size={18} />
-            <span className="sidebar-text">{t('settings')}</span>
-          </li>
-        </ul>
+            <>
+              <li
+                className={`nav-item ${activeTab === 'requests' ? 'active' : ''}`}
+                onClick={() => setActiveTab('requests')}
+              >
+                <FileText size={18} />
+                <span className="sidebar-text">{t('materialRequests')}</span>
+              </li>
 
+              <li
+                className={`nav-item ${activeTab === 'contractors' ? 'active' : ''}`}
+                onClick={() => setActiveTab('contractors')}
+              >
+                <Users size={18} />
+                <span className="sidebar-text">{t('contractors')}</span>
+              </li>
+
+              <li
+                className={`nav-item ${activeTab === 'products' ? 'active' : ''}`}
+                onClick={() => setActiveTab('products')}
+              >
+                <Package size={18} />
+                <span className="sidebar-text">{t('masterProductCatalog')}</span>
+              </li>
+            </>
+          )}
+        </ul>
       </div>
 
       {/* Logout */}

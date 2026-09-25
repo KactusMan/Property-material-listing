@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { connectDB } from './config/db.js';
 import { User } from './models/User.js';
+import { Contractor } from './models/Contractor.js';
 
 const required = ['MONGODB_URI', 'ADMIN_EMAIL', 'ADMIN_PASSWORD', 'TEST_CONTRACTOR_EMAIL', 'TEST_CONTRACTOR_PASSWORD'];
 const missing = required.filter((key) => !process.env[key]);
@@ -8,16 +9,39 @@ if (missing.length) throw new Error(`Missing required environment variables: ${m
 
 const saveAccount = async ({ email, password, name, companyName, role }) => {
   let user = await User.findOne({ email: email.toLowerCase() });
+  let contractorId = user ? user.contractorId : '';
+  if (!contractorId && role === 'contractor') {
+    const count = await Contractor.countDocuments();
+    contractorId = `C${String(count + 1).padStart(3, '0')}`;
+  }
+
   if (!user) {
-    user = new User({ email: email.toLowerCase(), password, name, companyName, role });
+    user = new User({ email: email.toLowerCase(), password, name, companyName, role, contractorId });
   } else {
     user.name = name;
     user.companyName = companyName;
     user.role = role;
     user.active = true;
     user.password = password;
+    user.contractorId = contractorId;
   }
   await user.save();
+
+  if (role === 'contractor') {
+    await Contractor.updateOne(
+      { contractorId },
+      {
+        $set: {
+          contractorId,
+          name,
+          email: email.toLowerCase(),
+          companyName,
+          active: true
+        }
+      },
+      { upsert: true }
+    );
+  }
 };
 
 const provisionAccounts = async () => {
@@ -36,7 +60,7 @@ const provisionAccounts = async () => {
     companyName: process.env.TEST_CONTRACTOR_COMPANY || 'Test Contractor Company',
     role: 'contractor'
   });
-  console.log('Administrator and test contractor accounts are ready.');
+  console.log('Administrator and test contractor accounts are ready in MongoDB Atlas.');
 };
 
 provisionAccounts()

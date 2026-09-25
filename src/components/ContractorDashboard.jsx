@@ -10,21 +10,20 @@ import {
   CheckCircle, 
   Clock, 
   Sparkles,
-  AlertCircle,
-  ExternalLink
+  AlertCircle
 } from 'lucide-react';
 import PropertyCatalog from './PropertyCatalog';
 import SuccessModal from './SuccessModal';
 import { apiFetch } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 
-export default function ContractorDashboard({ user }) {
+export default function ContractorDashboard({ user, initialSelectedProperty, onSelectProperty }) {
   const { t } = useI18n();
   const [properties, setProperties] = useState([]);
   const [products, setProducts] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
 
-  const [selectedProperty, setSelectedProperty] = useState('');
+  const [selectedProperty, setSelectedProperty] = useState(initialSelectedProperty || '');
   const [quantities, setQuantities] = useState({});
   const [notes, setNotes] = useState('');
 
@@ -37,6 +36,13 @@ export default function ContractorDashboard({ user }) {
   const [error, setError] = useState('');
 
   const [viewTab, setViewTab] = useState('request'); // 'request' | 'my-requests' | 'properties'
+
+  useEffect(() => {
+    if (initialSelectedProperty) {
+      setSelectedProperty(initialSelectedProperty);
+      setViewTab('request');
+    }
+  }, [initialSelectedProperty]);
 
   useEffect(() => {
     fetchInitialData();
@@ -88,7 +94,6 @@ export default function ContractorDashboard({ user }) {
     return matchCat && matchSearch;
   });
 
-  // Filter assigned properties if specified on user profile
   const assignedProps = user?.assignedProperties && user.assignedProperties.length > 0
     ? properties.filter(p => user.assignedProperties.includes(p.name))
     : properties;
@@ -178,36 +183,12 @@ export default function ContractorDashboard({ user }) {
         </div>
       </div>
 
-      {/* Internal Navigation Tabs */}
-      <div className="admin-nav-tabs">
-        <button
-          className={`role-tab-btn ${viewTab === 'request' ? 'active' : ''}`}
-          onClick={() => setViewTab('request')}
-        >
-          {t('newMaterialRequest')}
-        </button>
-
-        <button
-          className={`role-tab-btn ${viewTab === 'my-requests' ? 'active' : ''}`}
-          onClick={() => setViewTab('my-requests')}
-        >
-          {t('myRequests')} ({myRequests.length})
-        </button>
-
-        <button
-          className={`role-tab-btn ${viewTab === 'properties' ? 'active' : ''}`}
-          onClick={() => setViewTab('properties')}
-        >
-          {t('properties')}
-        </button>
-      </div>
-
       {/* TAB 1: NEW ORDER FORM */}
       {viewTab === 'request' && (
         <div>
           {error && (
             <div style={{ background: '#fef2f2', color: '#dc2626', padding: '14px', borderRadius: '12px', marginBottom: '20px', fontWeight: '700' }}>
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
@@ -226,7 +207,7 @@ export default function ContractorDashboard({ user }) {
               <option value="">{t('chooseAssignedProperty')}</option>
               {(assignedProps.length > 0 ? assignedProps : properties).map(p => (
                 <option key={p.id} value={p.name}>
-                  📍 {p.name} — {p.address}
+                  {p.name} — {p.address}
                 </option>
               ))}
             </select>
@@ -341,71 +322,6 @@ export default function ContractorDashboard({ user }) {
             </div>
           </div>
         </div>
-      )}
-
-      {/* TAB 2: MY REQUESTS FEED */}
-      {viewTab === 'my-requests' && (
-        <div>
-          <h3 className="chart-title" style={{ marginBottom: '16px' }}>
-            {t('submitted')} {t('materialRequests')} ({myRequests.length})
-          </h3>
-
-          {myRequests.length === 0 ? (
-            <div className="chart-card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              {t('noRequestsYet')}
-            </div>
-          ) : (
-            myRequests.map(req => (
-              <div key={req.requestId} className="chart-card" style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '1rem', color: 'var(--primary-blue)', marginRight: '10px' }}>
-                      {req.requestId}
-                    </span>
-                    <span className={`status-pill status-${req.status.toLowerCase()}`}>
-                      {t(req.status.toLowerCase()) || req.status}
-                    </span>
-                  </div>
-
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {new Date(req.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-
-                <div style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '8px' }}>
-                  📍 Property: {req.propertyName} {req.propertyAddress && `(${req.propertyAddress})`}
-                </div>
-
-                {req.notes && (
-                  <div style={{ background: 'var(--bg-slate)', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '12px' }}>
-                    <strong>Notes:</strong> {req.notes}
-                  </div>
-                )}
-
-                <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                  {t('itemsRequested')}:
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {req.items.map((item, idx) => (
-                    <span key={idx} className="spec-pill" style={{ background: 'var(--primary-blue-light)', color: 'var(--primary-blue)' }}>
-                      {item.productName} × <strong>{item.quantity}</strong>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* TAB 3: PROPERTIES */}
-      {viewTab === 'properties' && (
-        <PropertyCatalog
-          onSelectPropertyForOrder={(propName) => {
-            setSelectedProperty(propName);
-            setViewTab('request');
-          }}
-        />
       )}
 
       {/* Success Modal */}

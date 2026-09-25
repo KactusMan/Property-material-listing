@@ -1,41 +1,59 @@
 import React from 'react';
-import { CheckCircle2, Sparkles } from 'lucide-react';
+import { CheckCircle2, X } from 'lucide-react';
 
 export default function SuccessModal({ requestId, onClose }) {
   if (!requestId) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-icon">🎉</div>
-        <h2 className="modal-title">Request Submitted!</h2>
-        <div className="modal-body">
-          <p style={{ marginBottom: '12px' }}>
-            Your material request was submitted and is ready for admin review.
-          </p>
-          <div style={{
-            background: 'var(--pink-light)',
-            padding: '12px 18px',
-            borderRadius: '12px',
-            border: '1px solid var(--border-pink)',
-            fontWeight: '800',
-            color: 'var(--pink-dark)',
-            fontSize: '1.2rem',
-            letterSpacing: '0.5px',
-            display: 'inline-block'
-          }}>
-            {requestId}
-          </div>
-          <p style={{ marginTop: '16px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-            The purchaser & admin team will review your order details shortly.
-          </p>
+      <div 
+        className="modal-card" 
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: '440px', textAlign: 'center', padding: '32px 24px' }}
+      >
+        <div style={{
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          background: '#dcfce7',
+          color: '#15803d',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 16px auto'
+        }}>
+          <CheckCircle2 size={32} />
         </div>
+
+        <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>
+          Request Submitted Successfully!
+        </h2>
+
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5' }}>
+          Your material request has been logged and sent to the administrator & purchasing team for review.
+        </p>
+
+        <div style={{
+          background: 'var(--primary-blue-light)',
+          padding: '10px 18px',
+          borderRadius: '12px',
+          border: '1px solid var(--primary-blue-border)',
+          fontWeight: '800',
+          color: 'var(--primary-blue)',
+          fontSize: '1.1rem',
+          fontFamily: 'var(--font-mono)',
+          margin: '0 auto 20px auto',
+          display: 'inline-block'
+        }}>
+          {requestId}
+        </div>
+
         <button
-          className="btn-submit"
-          style={{ width: '100%', justifyContent: 'center' }}
+          className="btn-auth-submit"
+          style={{ width: '100%', margin: 0, padding: '14px' }}
           onClick={onClose}
         >
-          <CheckCircle2 size={20} /> Done
+          Done
         </button>
       </div>
     </div>

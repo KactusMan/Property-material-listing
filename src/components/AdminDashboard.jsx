@@ -16,13 +16,12 @@ import {
   X,
   Building,
   Layers,
-  ShoppingBag,
-  Power
+  ShoppingBag
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 
-export default function AdminDashboard({ user }) {
+export default function AdminDashboard({ user, activeTab }) {
   const { t } = useI18n();
   const [requests, setRequests] = useState([]);
   const [contractors, setContractors] = useState([]);
@@ -32,20 +31,21 @@ export default function AdminDashboard({ user }) {
 
   const [expandedReqId, setExpandedReqId] = useState(null);
   const [filterStatus, setFilterStatus] = useState('All');
-  const [adminTab, setAdminTab] = useState('overview'); // 'overview' | 'requests' | 'contractors' | 'products' | 'properties'
+  
+  // Sync adminTab with activeTab passed from Sidebar
+  const getAdminTabFromProp = (tab) => {
+    if (tab === 'requests') return 'requests';
+    if (tab === 'contractors') return 'contractors';
+    if (tab === 'products') return 'products';
+    if (tab === 'properties') return 'properties';
+    return 'overview';
+  };
 
-  // Modal States
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [prodForm, setProdForm] = useState({
-    name: '', category: 'General', unit: 'each', details: '', supplierLink: '', expectedPrice: '', image: '', notes: ''
-  });
+  const [adminTab, setAdminTab] = useState(getAdminTabFromProp(activeTab));
 
-  const [showPropertyModal, setShowPropertyModal] = useState(false);
-  const [propForm, setPropForm] = useState({ name: '', address: '' });
-
-  const [editingContractor, setEditingContractor] = useState(null);
-  const [selectedPropsToAssign, setSelectedPropsToAssign] = useState([]);
+  useEffect(() => {
+    setAdminTab(getAdminTabFromProp(activeTab));
+  }, [activeTab]);
 
   useEffect(() => {
     fetchAdminData();
@@ -96,7 +96,6 @@ export default function AdminDashboard({ user }) {
     }
   };
 
-  // Open All Amazon Links for a request
   const handleOpenAllLinks = (items) => {
     const validLinks = items.map(i => i.supplierLink).filter(Boolean);
     if (validLinks.length === 0) {
@@ -109,6 +108,18 @@ export default function AdminDashboard({ user }) {
   };
 
   // Product CRUD
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [prodForm, setProdForm] = useState({
+    name: '', category: 'General', unit: 'each', details: '', supplierLink: '', expectedPrice: '', image: '', notes: ''
+  });
+
+  const [showPropertyModal, setShowPropertyModal] = useState(false);
+  const [propForm, setPropForm] = useState({ name: '', address: '' });
+
+  const [editingContractor, setEditingContractor] = useState(null);
+  const [selectedPropsToAssign, setSelectedPropsToAssign] = useState([]);
+
   const handleSaveProduct = async (e) => {
     e.preventDefault();
     try {
@@ -143,7 +154,6 @@ export default function AdminDashboard({ user }) {
     }
   };
 
-  // Property CRUD
   const handleSaveProperty = async (e) => {
     e.preventDefault();
     try {
@@ -162,7 +172,6 @@ export default function AdminDashboard({ user }) {
     }
   };
 
-  // Assign Contractor Properties
   const handleSaveContractorProps = async () => {
     if (!editingContractor) return;
     try {
@@ -202,7 +211,7 @@ export default function AdminDashboard({ user }) {
       <div className="metrics-grid">
         <div className="metric-card-pro">
           <div className="metric-header">
-            <span className="metric-title">{t('totalMonies')}</span>
+            <span className="metric-title">Total Material Estimated Cost</span>
           </div>
           <div className="metric-number" style={{ color: 'var(--primary-blue)' }}>
             ${totalMonies.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -237,7 +246,7 @@ export default function AdminDashboard({ user }) {
         </div>
       </div>
 
-      {/* Internal Navigation Tabs */}
+      {/* Internal Sub-Tabs Navigation */}
       <div className="admin-nav-tabs">
         <button
           className={`role-tab-btn ${adminTab === 'overview' ? 'active' : ''}`}
@@ -275,7 +284,7 @@ export default function AdminDashboard({ user }) {
         </button>
       </div>
 
-      {/* TAB 1: OVERVIEW ANALYTICS */}
+      {/* TAB 1: OVERVIEW */}
       {adminTab === 'overview' && (
         <div>
           <div className="analytics-grid">
@@ -413,7 +422,6 @@ export default function AdminDashboard({ user }) {
                         </button>
                       )}
 
-                      {/* Open All Amazon Links button */}
                       <button
                         onClick={() => handleOpenAllLinks(req.items)}
                         className="action-btn btn-amazon"
@@ -492,7 +500,7 @@ export default function AdminDashboard({ user }) {
         </div>
       )}
 
-      {/* TAB 3: CONTRACTORS & ASSIGNED PROPERTIES */}
+      {/* TAB 3: CONTRACTORS */}
       {adminTab === 'contractors' && (
         <div>
           <h3 className="chart-title" style={{ marginBottom: '16px' }}>
@@ -522,12 +530,12 @@ export default function AdminDashboard({ user }) {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {c.assignedProperties.map((pName, idx) => (
                         <span key={idx} className="spec-pill" style={{ background: 'var(--primary-blue-light)', color: 'var(--primary-blue)' }}>
-                          📍 {pName}
+                          {pName}
                         </span>
                       ))}
                     </div>
                   ) : (
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-subdued)', italic: 'true' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-subdued)' }}>
                       {t('noAssignedProperties')}
                     </p>
                   )}
@@ -549,7 +557,7 @@ export default function AdminDashboard({ user }) {
         </div>
       )}
 
-      {/* TAB 4: MASTER PRODUCTS CATALOG MANAGEMENT */}
+      {/* TAB 4: MASTER PRODUCTS CATALOG */}
       {adminTab === 'products' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -648,7 +656,7 @@ export default function AdminDashboard({ user }) {
         </div>
       )}
 
-      {/* MODAL 1: ADD/EDIT PRODUCT */}
+      {/* MODALS */}
       {showProductModal && (
         <div className="modal-overlay">
           <div className="modal-card" style={{ maxWidth: '520px' }}>
@@ -738,7 +746,6 @@ export default function AdminDashboard({ user }) {
         </div>
       )}
 
-      {/* MODAL 2: ADD PROPERTY */}
       {showPropertyModal && (
         <div className="modal-overlay">
           <div className="modal-card" style={{ maxWidth: '420px' }}>
@@ -782,7 +789,6 @@ export default function AdminDashboard({ user }) {
         </div>
       )}
 
-      {/* MODAL 3: ASSIGN CONTRACTOR PROPERTIES */}
       {editingContractor && (
         <div className="modal-overlay">
           <div className="modal-card" style={{ maxWidth: '480px' }}>
