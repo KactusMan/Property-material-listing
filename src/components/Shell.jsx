@@ -2,7 +2,25 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell, DotsThreeOutline, Package, SignOut, Translate } from '@phosphor-icons/react';
 import { ago, initials, moneyShort } from '../lib/format';
 import { toggleLanguage, useI18n } from '../lib/i18n';
-import { Sheet, StatusBadge } from './ui';
+import { useTheme } from '../lib/theme';
+import { Segmented, Sheet, StatusBadge } from './ui';
+
+export function ThemeSwitch() {
+  const { t } = useI18n();
+  const [theme, setTheme] = useTheme();
+  return (
+    <Segmented
+      label={t('theme')}
+      value={theme}
+      onChange={setTheme}
+      options={[
+        { value: 'light', label: t('themeLight') },
+        { value: 'dark', label: t('themeDark') },
+        { value: 'system', label: t('themeAuto') }
+      ]}
+    />
+  );
+}
 
 export function BrandMark({ size = 16 }) {
   return (
@@ -116,6 +134,9 @@ export default function Shell({ user, nav, page, onNavigate, onSignOut, activity
           ))}
         </nav>
         <div className="sidebar-foot">
+          <div className="theme-row">
+            <ThemeSwitch />
+          </div>
           <div className="who">
             <span className="avatar">{initials(user.name)}</span>
             <div className="who-text">
@@ -177,6 +198,10 @@ export default function Shell({ user, nav, page, onNavigate, onSignOut, activity
               </button>
             ))}
             <div className="nav-divider" role="separator" />
+            <div className="theme-row" style={{ padding: '4px 10px 8px' }}>
+              <span className="small muted">{t('theme')}</span>
+              <ThemeSwitch />
+            </div>
             <button className="nav-item" onClick={toggleLanguage}>
               <Translate size={19} aria-hidden="true" /> {t('language')}
             </button>

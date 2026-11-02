@@ -10,8 +10,16 @@ const STATUSES = ['Submitted', 'Approved', 'Ordered', 'Delivered', 'Rejected'];
 
 router.get('/', asyncHandler(async (req, res) => {
   const filter = req.user.role === 'admin' ? {} : { contractorEmail: req.user.email };
-  const requests = await Request.find(filter).sort({ createdAt: -1 }).limit(500).lean();
-  res.json(requests.map(({ _id, __v, ...r }) => r));
+  const [requests, products] = await Promise.all([
+    Request.find(filter).sort({ createdAt: -1 }).limit(500).lean(),
+    Product.find({}, { productId: 1, unit: 1 }).lean()
+  ]);
+  // Requests saved by the first release have no unit on their items; fill it from the catalogue.
+  const unitOf = new Map(products.map((p) => [p.productId, p.unit]));
+  res.json(requests.map(({ _id, __v, ...r }) => ({
+    ...r,
+    items: (r.items || []).map((item) => ({ ...item, unit: item.unit || unitOf.get(item.productId) || '' }))
+  })));
 }));
 
 router.post('/', approvedOnly, asyncHandler(async (req, res) => {

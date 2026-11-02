@@ -40,31 +40,61 @@
   color-scheme: light;
 }
 
+/* Dark palette: used when the viewer picks Dark, or picks Auto and the device is in dark mode.
+   Light is the default. Text tones are kept well above WCAG AA on every surface. */
+:root[data-theme='dark'] {
+  --bg: #171614;
+  --surface: #201e1b;
+  --surface-2: #2a2824;
+  --line: #38342f;
+  --line-strong: #4b463f;
+  --ink: #f3efe7;
+  --ink-2: #d2cbbf;
+  --ink-3: #a59e92;
+  --accent: #e8834b;
+  --accent-hover: #f09a66;
+  --accent-ink: #1a0f08;
+  --accent-soft: #43291a;
+  --focus: #e8834b;
+  --amber-ink: #f0c56c;
+  --amber-bg: #3d3016;
+  --green-ink: #8fd3a4;
+  --green-bg: #1f3626;
+  --blue-ink: #a3c2e3;
+  --blue-bg: #20303f;
+  --red-ink: #f29d8f;
+  --red-bg: #43221c;
+  --grey-ink: #d2cbbf;
+  --grey-bg: #312e2a;
+  --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px -8px rgb(0 0 0 / 0.55);
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #151412;
-    --surface: #1c1b18;
-    --surface-2: #24221f;
-    --line: #2f2c28;
-    --line-strong: #403c36;
-    --ink: #ece8e0;
-    --ink-2: #b4ada1;
-    --ink-3: #847d71;
-    --accent: #e0793f;
-    --accent-hover: #ec8c55;
+  :root[data-theme='system'] {
+    --bg: #171614;
+    --surface: #201e1b;
+    --surface-2: #2a2824;
+    --line: #38342f;
+    --line-strong: #4b463f;
+    --ink: #f3efe7;
+    --ink-2: #d2cbbf;
+    --ink-3: #a59e92;
+    --accent: #e8834b;
+    --accent-hover: #f09a66;
     --accent-ink: #1a0f08;
-    --accent-soft: #3a2518;
-    --focus: #e0793f;
-    --amber-ink: #e3b65a;
-    --amber-bg: #392d14;
-    --green-ink: #7fc495;
-    --green-bg: #1c3123;
-    --blue-ink: #8fb2d8;
-    --blue-bg: #1d2a38;
-    --red-ink: #ec8f80;
-    --red-bg: #3d1f1a;
-    --grey-ink: #b4ada1;
-    --grey-bg: #2a2825;
+    --accent-soft: #43291a;
+    --focus: #e8834b;
+    --amber-ink: #f0c56c;
+    --amber-bg: #3d3016;
+    --green-ink: #8fd3a4;
+    --green-bg: #1f3626;
+    --blue-ink: #a3c2e3;
+    --blue-bg: #20303f;
+    --red-ink: #f29d8f;
+    --red-bg: #43221c;
+    --grey-ink: #d2cbbf;
+    --grey-bg: #312e2a;
     --shadow-pop: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px -8px rgb(0 0 0 / 0.55);
     color-scheme: dark;
   }
@@ -444,11 +474,13 @@ button {
 .sidebar-foot {
   margin-top: auto;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
 }
 .who {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -579,6 +611,7 @@ button.stat:hover { background: var(--surface-2); }
 }
 button.list-row:hover { background: var(--surface-2); }
 .list-row .grow { flex: 1; min-width: 0; }
+.list-row .title, .list-row .sub { display: block; }
 .list-row .title { font-weight: 550; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list-row .sub { font-size: 13px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list-row .end { text-align: right; flex: none; display: grid; justify-items: end; gap: 4px; }
@@ -1186,3 +1219,10 @@ button.list-row:hover { background: var(--surface-2); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
 }
+
+/* ---------- Appearance switch ---------- */
+
+.theme-row { display: grid; gap: 6px; padding: 0 4px; }
+.theme-row .segmented { width: 100%; }
+.theme-row .segmented button { flex: 1; justify-content: center; }
+.lang-row { justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Translate } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { toggleLanguage, useI18n } from '../lib/i18n';
-import { BrandMark } from '../components/Shell';
+import { BrandMark, ThemeSwitch } from '../components/Shell';
 import { Field } from '../components/ui';
 
 export default function Login({ onSignedIn }) {
@@ -52,6 +52,7 @@ export default function Login({ onSignedIn }) {
       <main className="auth-main">
         <div className="auth-card">
           <div className="lang-row">
+            <ThemeSwitch />
             <button className="btn btn-ghost btn-sm" onClick={toggleLanguage}><Translate size={16} /> {t('language')}</button>
           </div>
           <div>

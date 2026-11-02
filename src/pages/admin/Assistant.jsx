@@ -37,7 +37,9 @@ function inline(text, keyPrefix) {
 function Markdown({ text }) {
   const blocks = [];
   let list = null;
-  text.split('\n').forEach((raw, i) => {
+  // Conversations saved before the server stripped cart data may still contain it.
+  const visible = text.replace(/```\s*(?:cart|json)[\s\S]*$/i, '').trim();
+  visible.split('\n').forEach((raw, i) => {
     const line = raw.replace(/^#+\s*/, '').trimEnd();
     const bullet = line.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)$/);
     if (bullet) {
@@ -94,9 +96,9 @@ function CartPanel({ cart, setCart, onSaveToCatalog }) {
           <div style={{ minWidth: 0 }}>
             <div className="name">{item.name}</div>
             <div className="sub">
-              {item.price ? <span className="num">{money(item.price)}</span> : 'no price found'}
+              {item.price ? <span className="num">{money(item.price)}</span> : item.url ? 'No price found' : 'Not an online purchase'}
               {item.store ? ` · ${item.store}` : ''}
-              {item.catalogId ? ` · catalogue ${item.catalogId}` : ''}
+              {item.catalogId ? ' · in your catalogue' : ''}
             </div>
             {item.note && <div className="sub">{item.note}</div>}
             <div className="links">
