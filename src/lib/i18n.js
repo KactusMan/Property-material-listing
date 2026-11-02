@@ -1,185 +1,193 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-const translations = {
+// English and Spanish for everything vendors see. Admin-only screens are English.
+const strings = {
   en: {
-    // Top & Navigation
-    dashboard: 'Dashboard',
-    properties: 'Properties',
-    materialRequests: 'Material Requests',
-    materialsCatalog: 'Approved Catalog',
-    contractors: 'Contractors',
-    productsManagement: 'Master Catalog',
-    settings: 'Settings',
-    logout: 'Sign Out',
-    searchPlaceholder: 'Search properties, materials, requests...',
-    adminRole: 'Admin',
-    contractorRole: 'Contractor',
-
-    // Contractor View
-    newMaterialRequest: 'New Material Request',
-    myRequests: 'My Requests',
-    selectProperty: 'Select Job Site Property',
-    chooseAssignedProperty: '-- Choose Assigned Property --',
-    approvedCatalog: 'Approved Materials Catalog',
-    searchMaterials: 'Search materials...',
-    allCategories: 'All',
-    unit: 'Unit',
-    selectedItems: 'Selected Items',
-    submitRequest: 'Submit Material Request',
-    submitting: 'Submitting...',
-    orderNotes: 'Additional Order Notes',
-    notesPlaceholder: 'Provide delivery instructions, unit/room details, or urgency...',
-    noRequestsYet: 'You have not submitted any material requests yet.',
-    itemsRequested: 'Items Requested',
-
-    // Admin View
-    totalMonies: 'Total Monies Allocated',
-    pendingReview: 'Pending Admin Review',
-    approvedOrders: 'Approved Orders',
-    activeContractors: 'Active Contractors',
-    overviewTab: 'Overview',
-    materialApprovals: 'Material Approvals',
-    contractorAssignments: 'Contractors & Assigned Properties',
-    masterProductCatalog: 'Master Products Catalog',
-
-    // Request Card Actions
-    approveRequest: '✓ Approve Request',
-    markOrdered: '📦 Mark as Ordered',
-    markDelivered: '🚚 Mark Delivered',
-    viewLineItems: 'View Line Items',
-    hideItems: 'Hide Line Items',
-    openSupplierLink: '🔗 Open Supplier / Amazon Link',
-    openAllSupplierLinks: '🛒 Open All Product Links',
-    expectedUnitPrice: 'Expected Price',
-    estimatedLineTotal: 'Line Total',
-
-    // Statuses
+    signIn: 'Sign in',
+    register: 'Create account',
+    email: 'Email',
+    password: 'Password',
+    passwordHint: 'At least 10 characters.',
+    yourName: 'Your name',
+    company: 'Company',
+    companyHint: 'The business name you invoice under.',
+    noAccount: 'New vendor?',
+    haveAccount: 'Already have an account?',
+    welcomeBack: 'Welcome back',
+    signInSub: 'Sign in to order materials for your assigned properties.',
+    registerSub: 'Register your company. The office approves new vendors before properties are assigned.',
+    signOut: 'Sign out',
+    language: 'Español',
+    newRequest: 'Order materials',
+    myRequests: 'My requests',
+    suggest: 'Suggest a material',
+    more: 'More',
+    chooseProperty: 'Choose the property',
+    chooseMaterials: 'Add materials',
+    searchMaterials: 'Search materials',
+    all: 'All',
+    perUnit: 'per',
+    add: 'Add',
+    yourOrder: 'Your request',
+    nothingSelected: 'Pick materials from the list. They will show up here.',
+    notes: 'Notes for the office',
+    notesPlaceholder: 'Room, delivery instructions, how urgent it is',
+    estimatedTotal: 'Estimated total',
+    submitRequest: 'Send request',
+    sending: 'Sending',
+    requestSent: 'Request sent. The office will review it.',
+    reviewOrder: 'Review',
+    items: 'items',
+    noProperties: 'No properties assigned yet',
+    noPropertiesBody: 'The office has not assigned a property to your account. Once they do, it will appear here and you can start ordering.',
+    pendingTitle: 'Your account is waiting for approval',
+    pendingBody: 'Thanks for registering. The office checks every new vendor before giving access to properties. You will be able to order materials as soon as you are approved.',
+    noRequests: 'No requests yet',
+    noRequestsBody: 'When you send a material request it shows up here with its status.',
+    status: 'Status',
+    property: 'Property',
+    total: 'Total',
     submitted: 'Submitted',
     approved: 'Approved',
     ordered: 'Ordered',
     delivered: 'Delivered',
-
-    // Master Catalog Admin
-    addNewProduct: '+ Add New Product',
-    editProduct: 'Edit Product',
-    productName: 'Product Name',
+    rejected: 'Rejected',
+    pending: 'Pending',
+    suggestTitle: 'Suggest a material',
+    suggestSub: 'Found something we should stock, or the same item for less? Send it here. The office reviews every suggestion before it goes into the catalogue.',
+    suggestNew: 'New material',
+    suggestPrice: 'Better price',
+    materialName: 'Material name',
+    whichMaterial: 'Which catalogue material',
     category: 'Category',
-    modelDetails: 'Exact Model / Size / Color',
-    supplierLink: 'Amazon / Supplier Link',
-    expectedPrice: 'Expected Price ($)',
-    imageUrl: 'Image URL',
-    active: 'Active',
-    inactive: 'Inactive',
-    saveProduct: 'Save Product',
+    unit: 'Unit',
+    priceFound: 'Price you found (USD)',
+    currentPrice: 'Current catalogue price',
+    productLink: 'Product link',
+    productLinkHint: 'Paste the Amazon, Home Depot or Lowe’s page.',
+    details: 'Size, model, color',
+    why: 'Why this one? (optional)',
+    sendSuggestion: 'Send suggestion',
+    suggestionSent: 'Suggestion sent for review.',
+    mySuggestions: 'Your suggestions',
+    noSuggestions: 'You have not suggested anything yet.',
+    select: 'Select',
+    officeNote: 'Office note',
+    save: 'Save',
     cancel: 'Cancel',
-
-    // Contractor Management
-    assignedProperties: 'Assigned Properties',
-    assignProperty: 'Assign Property',
-    unassign: 'Remove',
-    noAssignedProperties: 'No specific properties assigned (can access all active properties)',
+    close: 'Close',
+    open: 'Open',
+    retry: 'Try again',
+    loadFailed: 'Could not load this page.'
   },
   es: {
-    // Top & Navigation
-    dashboard: 'Panel Principal',
-    properties: 'Propiedades',
-    materialRequests: 'Solicitudes de Material',
-    materialsCatalog: 'Catálogo Aprobado',
-    contractors: 'Contratistas',
-    productsManagement: 'Catálogo Maestro',
-    settings: 'Configuración',
-    logout: 'Cerrar Sesión',
-    searchPlaceholder: 'Buscar propiedades, materiales, solicitudes...',
-    adminRole: 'Administrador',
-    contractorRole: 'Contratista',
-
-    // Contractor View
-    newMaterialRequest: 'Nueva Solicitud de Materiales',
-    myRequests: 'Mis Solicitudes',
-    selectProperty: 'Seleccionar Propiedad de la Obra',
-    chooseAssignedProperty: '-- Seleccionar Propiedad Asignada --',
-    approvedCatalog: 'Catálogo de Materiales Aprobados',
-    searchMaterials: 'Buscar materiales...',
-    allCategories: 'Todos',
-    unit: 'Unidad',
-    selectedItems: 'Artículos Seleccionados',
-    submitRequest: 'Enviar Solicitud de Materiales',
-    submitting: 'Enviando...',
-    orderNotes: 'Notas Adicionales de la Orden',
-    notesPlaceholder: 'Instrucciones de entrega, detalles de la habitación o urgencia...',
-    noRequestsYet: 'Aún no ha enviado ninguna solicitud de material.',
-    itemsRequested: 'Artículos Solicitados',
-
-    // Admin View
-    totalMonies: 'Total de Fondos Asignados',
-    pendingReview: 'Pendiente de Revisión',
-    approvedOrders: 'Pedidos Aprobados',
-    activeContractors: 'Contratistas Activos',
-    overviewTab: 'Resumen General',
-    materialApprovals: 'Aprobación de Materiales',
-    contractorAssignments: 'Contratistas y Propiedades Asignadas',
-    masterProductCatalog: 'Catálogo Maestro de Productos',
-
-    // Request Card Actions
-    approveRequest: '✓ Aprobar Solicitud',
-    markOrdered: '📦 Marcar como Pedido',
-    markDelivered: '🚚 Marcar Entregado',
-    viewLineItems: 'Ver Detalles del Pedido',
-    hideItems: 'Ocultar Detalles',
-    openSupplierLink: '🔗 Abrir Enlace de Amazon / Proveedor',
-    openAllSupplierLinks: '🛒 Abrir Todos los Enlaces de Productos',
-    expectedUnitPrice: 'Precio Unitario Esperado',
-    estimatedLineTotal: 'Total de Línea',
-
-    // Statuses
+    signIn: 'Iniciar sesión',
+    register: 'Crear cuenta',
+    email: 'Correo',
+    password: 'Contraseña',
+    passwordHint: 'Mínimo 10 caracteres.',
+    yourName: 'Su nombre',
+    company: 'Empresa',
+    companyHint: 'El nombre con el que factura.',
+    noAccount: '¿Proveedor nuevo?',
+    haveAccount: '¿Ya tiene cuenta?',
+    welcomeBack: 'Bienvenido',
+    signInSub: 'Inicie sesión para pedir materiales para sus propiedades asignadas.',
+    registerSub: 'Registre su empresa. La oficina aprueba a cada proveedor antes de asignarle propiedades.',
+    signOut: 'Cerrar sesión',
+    language: 'English',
+    newRequest: 'Pedir materiales',
+    myRequests: 'Mis pedidos',
+    suggest: 'Sugerir material',
+    more: 'Más',
+    chooseProperty: 'Elija la propiedad',
+    chooseMaterials: 'Agregue materiales',
+    searchMaterials: 'Buscar materiales',
+    all: 'Todos',
+    perUnit: 'por',
+    add: 'Agregar',
+    yourOrder: 'Su pedido',
+    nothingSelected: 'Elija materiales de la lista. Aparecerán aquí.',
+    notes: 'Notas para la oficina',
+    notesPlaceholder: 'Cuarto, instrucciones de entrega, urgencia',
+    estimatedTotal: 'Total estimado',
+    submitRequest: 'Enviar pedido',
+    sending: 'Enviando',
+    requestSent: 'Pedido enviado. La oficina lo revisará.',
+    reviewOrder: 'Revisar',
+    items: 'artículos',
+    noProperties: 'Aún no tiene propiedades asignadas',
+    noPropertiesBody: 'La oficina todavía no le ha asignado una propiedad. Cuando lo haga, aparecerá aquí y podrá hacer pedidos.',
+    pendingTitle: 'Su cuenta está esperando aprobación',
+    pendingBody: 'Gracias por registrarse. La oficina revisa a cada proveedor nuevo antes de dar acceso a las propiedades. Podrá pedir materiales en cuanto lo aprueben.',
+    noRequests: 'Aún no hay pedidos',
+    noRequestsBody: 'Cuando envíe un pedido de materiales aparecerá aquí con su estado.',
+    status: 'Estado',
+    property: 'Propiedad',
+    total: 'Total',
     submitted: 'Enviado',
     approved: 'Aprobado',
-    ordered: 'Pedido',
+    ordered: 'Ordenado',
     delivered: 'Entregado',
-
-    // Master Catalog Admin
-    addNewProduct: '+ Agregar Nuevo Producto',
-    editProduct: 'Editar Producto',
-    productName: 'Nombre del Producto',
+    rejected: 'Rechazado',
+    pending: 'Pendiente',
+    suggestTitle: 'Sugerir un material',
+    suggestSub: '¿Encontró algo que deberíamos tener, o el mismo artículo más barato? Envíelo aquí. La oficina revisa cada sugerencia antes de agregarla al catálogo.',
+    suggestNew: 'Material nuevo',
+    suggestPrice: 'Mejor precio',
+    materialName: 'Nombre del material',
+    whichMaterial: 'Material del catálogo',
     category: 'Categoría',
-    modelDetails: 'Modelo / Tamaño / Color Exacto',
-    supplierLink: 'Enlace de Amazon / Proveedor',
-    expectedPrice: 'Precio Esperado ($)',
-    imageUrl: 'URL de Imagen',
-    active: 'Activo',
-    inactive: 'Inactivo',
-    saveProduct: 'Guardar Producto',
+    unit: 'Unidad',
+    priceFound: 'Precio que encontró (USD)',
+    currentPrice: 'Precio actual del catálogo',
+    productLink: 'Enlace del producto',
+    productLinkHint: 'Pegue la página de Amazon, Home Depot o Lowe’s.',
+    details: 'Tamaño, modelo, color',
+    why: '¿Por qué este? (opcional)',
+    sendSuggestion: 'Enviar sugerencia',
+    suggestionSent: 'Sugerencia enviada para revisión.',
+    mySuggestions: 'Sus sugerencias',
+    noSuggestions: 'Todavía no ha sugerido nada.',
+    select: 'Seleccione',
+    officeNote: 'Nota de la oficina',
+    save: 'Guardar',
     cancel: 'Cancelar',
-
-    // Contractor Management
-    assignedProperties: 'Propiedades Asignadas',
-    assignProperty: 'Asignar Propiedad',
-    unassign: 'Quitar',
-    noAssignedProperties: 'Sin propiedades específicas asignadas (acceso a todas)',
+    close: 'Cerrar',
+    open: 'Abrir',
+    retry: 'Reintentar',
+    loadFailed: 'No se pudo cargar esta página.'
   }
 };
 
-export function getLanguage() {
-  return localStorage.getItem('pm_lang') || 'en';
-}
+const read = () => {
+  try {
+    return localStorage.getItem('mf_lang') === 'es' ? 'es' : 'en';
+  } catch {
+    return 'en';
+  }
+};
 
-export function setLanguage(lang) {
-  localStorage.setItem('pm_lang', lang);
-  window.dispatchEvent(new Event('languagechange'));
+export function toggleLanguage() {
+  try {
+    localStorage.setItem('mf_lang', read() === 'es' ? 'en' : 'es');
+  } catch {
+    // Language falls back to English if storage is blocked.
+  }
+  window.dispatchEvent(new Event('mf-language'));
 }
 
 export function useI18n() {
-  const [lang, setLangState] = useState(getLanguage());
-
+  const [lang, setLang] = useState(read);
   useEffect(() => {
-    const handleLangChange = () => setLangState(getLanguage());
-    window.addEventListener('languagechange', handleLangChange);
-    return () => window.removeEventListener('languagechange', handleLangChange);
+    const update = () => setLang(read());
+    window.addEventListener('mf-language', update);
+    return () => window.removeEventListener('mf-language', update);
   }, []);
-
-  const t = (key) => {
-    return (translations[lang] && translations[lang][key]) || translations.en[key] || key;
-  };
-
-  return { t, lang, setLanguage };
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+  const t = (key) => strings[lang][key] ?? strings.en[key] ?? key;
+  const statusText = (status) => t(String(status || '').toLowerCase()) || status;
+  return { t, lang, statusText };
 }

@@ -6,9 +6,16 @@ const requestItemSchema = new mongoose.Schema({
   category: { type: String, default: '' },
   details: { type: String, default: '' },
   supplierLink: { type: String, default: '' },
+  unit: { type: String, default: '' },
   quantity: { type: Number, required: true },
   expectedPrice: { type: Number, required: true },
   estimatedTotal: { type: Number, required: true }
+}, { _id: false });
+
+const statusChangeSchema = new mongoose.Schema({
+  status: String,
+  by: String,
+  at: { type: Date, default: Date.now }
 }, { _id: false });
 
 const requestSchema = new mongoose.Schema({
@@ -26,6 +33,7 @@ const requestSchema = new mongoose.Schema({
     enum: ['Submitted', 'Approved', 'Ordered', 'Delivered', 'Rejected'],
     default: 'Submitted'
   },
+  history: { type: [statusChangeSchema], default: [] },
   items: [requestItemSchema]
 }, {
   timestamps: true

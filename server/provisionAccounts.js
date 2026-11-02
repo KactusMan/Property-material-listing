@@ -16,12 +16,13 @@ const saveAccount = async ({ email, password, name, companyName, role }) => {
   }
 
   if (!user) {
-    user = new User({ email: email.toLowerCase(), password, name, companyName, role, contractorId });
+    user = new User({ email: email.toLowerCase(), password, name, companyName, role, contractorId, approved: true });
   } else {
     user.name = name;
     user.companyName = companyName;
     user.role = role;
     user.active = true;
+    user.approved = true;
     user.password = password;
     user.contractorId = contractorId;
   }

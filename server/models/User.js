@@ -2,33 +2,32 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['admin', 'contractor'], default: 'contractor' },
   contractorId: { type: String, default: '' },
   companyName: { type: String, default: '' },
-  assignedProperties: [{ type: String }],
-  active: { type: Boolean, default: true }
+  // Self-registered vendor accounts wait for an administrator before they can see any property.
+  approved: { type: Boolean, default: false },
+  active: { type: Boolean, default: true },
+  lastLoginAt: { type: Date, default: null }
 }, {
   timestamps: true
 });
 
-// Pre-save hook to hash password before saving to MongoDB
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await bcrypt.hash(this.password, 12);
     next();
   } catch (err) {
     next(err);
   }
 });
 
-// Method to compare candidate password with hashed password
-userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+userSchema.methods.matchPassword = function (enteredPassword) {
+  return bcrypt.compare(enteredPassword, this.password);
 };
 
 export const User = mongoose.model('User', userSchema);

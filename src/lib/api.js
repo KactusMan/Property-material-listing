@@ -1,21 +1,31 @@
-export const authHeaders = (headers = {}) => {
-  const token = localStorage.getItem('pm_token');
-  return {
-    ...headers,
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  };
-};
+// JSON fetch wrapper. Sessions live in an httpOnly cookie, so no token handling happens here.
 
-export const apiFetch = async (url, options = {}) => {
-  const response = await fetch(url, {
-    ...options,
-    headers: authHeaders(options.headers)
-  });
+export class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
 
-  if (response.status === 401) {
-    localStorage.removeItem('pm_token');
-    localStorage.removeItem('pm_user');
+export async function api(path, { method = 'GET', body } = {}) {
+  let response;
+  try {
+    response = await fetch(path, {
+      method,
+      credentials: 'same-origin',
+      headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: body !== undefined ? JSON.stringify(body) : undefined
+    });
+  } catch {
+    throw new ApiError('No connection. Check your internet and try again.', 0);
   }
 
-  return response;
-};
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (response.status === 401 && path !== '/api/auth/login' && path !== '/api/auth/me') {
+      window.dispatchEvent(new Event('session-expired'));
+    }
+    throw new ApiError(data.error || 'Something went wrong. Please try again.', response.status);
+  }
+  return data;
+}
