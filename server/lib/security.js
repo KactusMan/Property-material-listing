@@ -5,13 +5,15 @@ import { HttpError } from './http.js';
 
 const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
 
-if (isProduction && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)) {
-  // Refuse to sign sessions with a guessable key in production.
-  throw new Error('JWT_SECRET must be set to at least 32 random characters.');
-}
+// In production a missing or short secret disables sign-in (with a clear 503) rather than
+// signing sessions with a guessable key. Locally, a random key just resets sessions on restart.
+export const jwtConfigured = Boolean(process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32);
+const JWT_SECRET = jwtConfigured ? process.env.JWT_SECRET : isProduction ? null : crypto.randomBytes(48).toString('hex');
 
-// In local development without a secret, sessions simply reset when the server restarts.
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
+const requireSecret = () => {
+  if (!JWT_SECRET) throw new HttpError(503, 'Sign-in is not configured on the server yet (JWT_SECRET is missing or shorter than 32 characters).');
+  return JWT_SECRET;
+};
 const COOKIE = 'mf_session';
 const SESSION_DAYS = 7;
 
@@ -34,7 +36,7 @@ const parseCookies = (header = '') =>
   );
 
 export const setSession = (res, user) => {
-  const token = jwt.sign({ id: String(user._id), role: user.role }, JWT_SECRET, {
+  const token = jwt.sign({ id: String(user._id), role: user.role }, requireSecret(), {
     expiresIn: `${SESSION_DAYS}d`,
     algorithm: 'HS256'
   });
@@ -60,9 +62,10 @@ export const authenticate = async (req, res, next) => {
   try {
     const token = parseCookies(req.headers.cookie)[COOKIE];
     if (!token) throw new HttpError(401, 'Please sign in.');
+    const secret = requireSecret();
     let decoded;
     try {
-      decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+      decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
     } catch {
       throw new HttpError(401, 'Your session has expired. Please sign in again.');
     }

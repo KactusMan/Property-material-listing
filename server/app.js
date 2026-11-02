@@ -5,7 +5,7 @@ import { Request } from './models/Request.js';
 import { Suggestion } from './models/Suggestion.js';
 import { User } from './models/User.js';
 import { asyncHandler, HttpError } from './lib/http.js';
-import { adminOnly, authenticate, requireJson, securityHeaders } from './lib/security.js';
+import { adminOnly, authenticate, jwtConfigured, requireJson, securityHeaders } from './lib/security.js';
 import authRoutes from './routes/auth.js';
 import catalogRoutes from './routes/catalog.js';
 import propertyRoutes from './routes/properties.js';
@@ -22,6 +22,19 @@ app.use(securityHeaders);
 app.use(express.json({ limit: '200kb' }));
 app.use(requireJson);
 
+// Reports which settings are present (never their values) so a broken deploy is easy to diagnose.
+app.get('/api/health', async (req, res) => {
+  let database = false;
+  try {
+    await connectDB();
+    database = true;
+  } catch (error) {
+    console.error('Database connection failed:', error.message);
+  }
+  const config = { database, sessions: jwtConfigured, assistant: Boolean(process.env.GROQ_API_KEY) };
+  res.status(database && jwtConfigured ? 200 : 503).json({ ok: database && jwtConfigured, ...config });
+});
+
 app.use('/api', async (req, res, next) => {
   try {
     await connectDB();
@@ -31,8 +44,6 @@ app.use('/api', async (req, res, next) => {
     next(new HttpError(503, 'The database is unavailable right now. Please try again shortly.'));
   }
 });
-
-app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', authenticate, catalogRoutes);
