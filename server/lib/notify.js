@@ -105,7 +105,7 @@ export const requestEmail = (r) => ({
   title: `${r.contractorName} needs materials for ${r.propertyName}`,
   summary: `${count(r.items.length, 'item')}, estimated at ${usd(r.estimatedTotal)}. Waiting for your approval.`,
   rows: [['Property', r.propertyName], ['Vendor', r.contractorName], ['Vendor notes', r.notes], ['Request number', r.requestId]],
-  items: r.items.map((i) => [`${i.quantity} ${i.unit} × ${i.productName}`, usd(i.estimatedTotal)]),
+  items: r.items.map((i) => [`${i.quantity}${i.unit && i.unit !== 'each' ? ` ${i.unit}` : ''} × ${i.productName}`, usd(i.estimatedTotal)]),
   total: usd(r.estimatedTotal),
   next: 'Open the request and approve or reject it. Once it is approved you can send it to the Amazon cart.',
   page: 'requests',
