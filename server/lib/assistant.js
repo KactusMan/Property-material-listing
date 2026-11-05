@@ -157,6 +157,15 @@ const searchBudget = (messages) => {
   return Math.min(24, Math.max(4, lines * 2));
 };
 
+// The order list only totals confirmed items, so the model's own total could disagree with it.
+export const withConfirmedNote = (text, cart) => {
+  if (!cart.length) return text;
+  const body = text.replace(/^.*estimated total.*$/gim, '').trim();
+  const unconfirmed = cart.filter((item) => item.url && !item.verified).length;
+  if (!unconfirmed) return body;
+  return `${body}\n\n${unconfirmed} item${unconfirmed > 1 ? 's' : ''} could not be confirmed on a store page, so ${unconfirmed > 1 ? 'they are' : 'it is'} left out of the order list total. Check the price with the search link before buying.`;
+};
+
 const isTracker = (url) => {
   try {
     const { protocol, hostname } = new URL(url);
@@ -238,7 +247,7 @@ export const runAssistant = async ({ messages, products }) => {
   const evidence = `${found}\n${await trackerPages(calls)}`;
   const { text, cart } = extractCart(content, evidence);
   return {
-    reply: text || 'I could not produce an answer for that. Try rephrasing the list.',
+    reply: withConfirmedNote(text, cart) || 'I could not produce an answer for that. Try rephrasing the list.',
     cart,
     searches: calls.length,
     tokens: data.usage?.total_tokens || 0
