@@ -17,7 +17,7 @@ React (Vite) front end, Express API (one serverless function on Vercel), MongoDB
 - Reviews vendor suggestions; approving updates the catalogue price or adds the material, with price history.
 - Sees every vendor from the workbook, which ones are active in the portal and when they last signed in, assigns properties, and creates logins.
 - **Buying assistant**: paste a WhatsApp list. The assistant (Groq `openai/gpt-oss-120b` with live browser search) reads each item, finds the cheapest suitable Amazon listing, compares it with the catalogue and returns an order list. Links and Amazon product IDs are only kept when they appeared in the live search results; anything unconfirmed falls back to an Amazon search. Selected items open in Amazon's cart in one click. The free Groq plan allows 200,000 tokens per day per model, which is a handful of lists; when the main model runs out the assistant moves to `openai/gpt-oss-20b`.
-- **Email alerts**: new requests, vendor suggestions and sign-ups are emailed to `NOTIFY_EMAIL` through Resend.
+- **Email alerts**: new requests, vendor suggestions and sign-ups are emailed to the admin account through Resend. Each email says what happened and what to do next, and replying reaches the vendor.
 
 ## Environment
 
@@ -29,7 +29,8 @@ Copy `.env.example` to `.env`. On Vercel, set the same variables under Project â
 | `JWT_SECRET` | 32+ random characters (`openssl rand -hex 32`). The API refuses to start in production without it. |
 | `GROQ_API_KEY` | Server-side only. Never prefix it with `VITE_`. |
 | `GROQ_MODEL`, `GROQ_FALLBACK_MODEL` | Optional, default to `openai/gpt-oss-120b` and `openai/gpt-oss-20b`. |
-| `RESEND_API_KEY`, `NOTIFY_EMAIL` | Optional. Both are needed for email alerts. Without a verified domain, the Resend account must be registered under `NOTIFY_EMAIL`. |
+| `RESEND_API_KEY` | Turns on email alerts. Without a verified domain, the Resend account must be registered under the address that receives them. |
+| `NOTIFY_EMAIL` | Optional. Sends alerts here instead of to the admin account's email. |
 | `MAIL_FROM`, `APP_URL` | Optional. Sender address once a domain is verified, and the site address used in email links. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Only used by `npm run import-data` to create the first admin when none exists. |
 
