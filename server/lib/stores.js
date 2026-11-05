@@ -28,6 +28,19 @@ export const asinFromUrl = (url = '') => {
   return '';
 };
 
+// Category and search pages can't be ordered from, so they never count as a found product.
+export const isProductPage = (url = '') => {
+  try {
+    const { hostname, pathname } = new URL(url);
+    if (hostname.endsWith('amazon.com')) return Boolean(asinFromUrl(url));
+    if (hostname.endsWith('homedepot.com')) return pathname.startsWith('/p/');
+    if (hostname.endsWith('lowes.com')) return pathname.startsWith('/pd/');
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const storeFromUrl = (url = '') => {
   try {
     const host = new URL(url).hostname;

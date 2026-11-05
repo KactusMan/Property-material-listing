@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Product } from '../models/Product.js';
 import { Request } from '../models/Request.js';
 import { asyncHandler, bad, HttpError, num, oneOf, str } from '../lib/http.js';
+import { notifyRequest } from '../lib/notify.js';
 import { adminOnly, approvedOnly } from '../lib/security.js';
 import { assignedPropertiesFor, vendorForUser } from './shared.js';
 
@@ -74,6 +75,7 @@ router.post('/', approvedOnly, asyncHandler(async (req, res) => {
   });
 
   const { _id, __v, ...saved } = request.toObject();
+  await notifyRequest(saved);
   res.status(201).json(saved);
 }));
 

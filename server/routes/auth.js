@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { User } from '../models/User.js';
 import { asyncHandler, bad, email, HttpError, password, str } from '../lib/http.js';
+import { notifySignup } from '../lib/notify.js';
 import { authenticate, clearSession, clientIp, rateLimit, setSession } from '../lib/security.js';
 import { publicUser } from './shared.js';
 
@@ -32,6 +33,7 @@ router.post('/register', registerLimiter, asyncHandler(async (req, res) => {
     approved: false,
     lastLoginAt: new Date()
   });
+  await notifySignup(user);
   setSession(res, user);
   res.status(201).json({ user: publicUser(user) });
 }));

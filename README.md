@@ -16,7 +16,8 @@ React (Vite) front end, Express API (one serverless function on Vercel), MongoDB
 - Reviews requests (Submitted → Approved → Ordered → Delivered, or Rejected). Items with an `amazon.com/dp/…` link go into the Amazon cart in one click.
 - Reviews vendor suggestions; approving updates the catalogue price or adds the material, with price history.
 - Sees every vendor from the workbook, which ones are active in the portal and when they last signed in, assigns properties, and creates logins.
-- **Buying assistant**: paste a WhatsApp list. The assistant (Groq `openai/gpt-oss-120b` with live browser search) reads each item, finds the cheapest suitable Amazon listing, compares it with the catalogue and returns an order list. Links and ASINs are only kept when they appeared in the live search results; anything unconfirmed falls back to an Amazon search. Selected items open in Amazon's cart in one click.
+- **Buying assistant**: paste a WhatsApp list. The assistant (OpenAI `gpt-5.4-mini` with web search) reads each item, finds the cheapest suitable product, compares it with the catalogue and returns an order list. OpenAI's search cannot see Amazon product pages, so Amazon products and prices come from price trackers; the server only keeps an Amazon product ID after confirming it on a tracker page the search returned. Anything unconfirmed falls back to an Amazon search. Selected items open in Amazon's cart in one click, and Amazon shows the real price there.
+- **Email alerts**: new requests, vendor suggestions and sign-ups are emailed to `NOTIFY_EMAIL` through Resend.
 
 ## Environment
 
@@ -26,8 +27,10 @@ Copy `.env.example` to `.env`. On Vercel, set the same variables under Project �
 | --- | --- |
 | `MONGODB_URI` | Atlas connection string including the database name, e.g. `…mongodb.net/property-materials?retryWrites=true&w=majority` |
 | `JWT_SECRET` | 32+ random characters (`openssl rand -hex 32`). The API refuses to start in production without it. |
-| `GROQ_API_KEY` | Server-side only. Never prefix it with `VITE_`. |
-| `GROQ_MODEL` | Optional, defaults to `openai/gpt-oss-120b`. |
+| `OPENAI_API_KEY` | Server-side only. Never prefix it with `VITE_`. |
+| `OPENAI_MODEL` | Optional, defaults to `gpt-5.4-mini`. |
+| `RESEND_API_KEY`, `NOTIFY_EMAIL` | Optional. Both are needed for email alerts. Without a verified domain, the Resend account must be registered under `NOTIFY_EMAIL`. |
+| `MAIL_FROM`, `APP_URL` | Optional. Sender address once a domain is verified, and the site address used in email links. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Only used by `npm run import-data` to create the first admin when none exists. |
 
 ## Commands

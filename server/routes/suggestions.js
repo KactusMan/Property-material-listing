@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Product } from '../models/Product.js';
 import { Suggestion } from '../models/Suggestion.js';
 import { asyncHandler, bad, HttpError, link, nextId, num, oneOf, str } from '../lib/http.js';
+import { notifySuggestion } from '../lib/notify.js';
 import { adminOnly, approvedOnly, rateLimit } from '../lib/security.js';
 import { storeFromUrl } from '../lib/stores.js';
 import { vendorForUser } from './shared.js';
@@ -51,6 +52,7 @@ router.post('/', approvedOnly, submitLimiter, asyncHandler(async (req, res) => {
       contractorId: req.user.contractorId || ''
     }
   });
+  if (req.user.role !== 'admin') await notifySuggestion(suggestion);
   res.status(201).json(view(suggestion.toObject()));
 }));
 

@@ -31,7 +31,7 @@ app.get('/api/health', async (req, res) => {
   } catch (error) {
     console.error('Database connection failed:', error.message);
   }
-  const config = { database, sessions: jwtConfigured, assistant: Boolean(process.env.GROQ_API_KEY) };
+  const config = { database, sessions: jwtConfigured, assistant: Boolean(process.env.OPENAI_API_KEY), email: Boolean(process.env.RESEND_API_KEY && process.env.NOTIFY_EMAIL) };
   res.status(database && jwtConfigured ? 200 : 503).json({ ok: database && jwtConfigured, ...config });
 });
 
